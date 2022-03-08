@@ -90,6 +90,13 @@ lmp_maxtp_lake <- full_join(lmp_maxtp_lake, stationlist)
 sunapee_shore = st_read(file.path(gis_dir, 'hydrography/LS_shore_WGS.shp'))
 #bathy
 sun_bathy <- raster(file.path(gis_dir, 'Sunapee Bathymetry/raster_files/originals/sun_ras_z_m'))
+#sunpaee streams
+sun_stream <- st_read(file.path(gis_dir, 'hydrography/streams.shp'))
+sun_stream_wgs <- st_transform(sun_stream, crs = 'EPSG:4326')
+#sunapee open water
+sun_ws_water <- st_read(file.path(gis_dir, 'hydrography/waterbodies_open_water_no_sun.shp'))
+sun_ws_water_wgs <- st_transform(sun_ws_water, crs = 'EPSG:4326')
+
 #table to sf for med and max tp
 medtp <- st_as_sf(lmp_medtp_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
 maxtp <- st_as_sf(lmp_maxtp_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
@@ -108,45 +115,46 @@ bbox_sun_new[3] <- bbox_sun_new[3] + (0.1 * xrange) # xmax - right
 bbox_sun_new[2] <- bbox_sun_new[2] - (0.025 * yrange) # ymin - bottom
 bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
-tm_shape(sun_bathy, bbox = bbox_sun_new)+
+tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons(border.col = 'blue', col = '#D9F9FA') +
+  tm_shape(sun_bathy)+
   tm_raster(palette = 'Blues',
-            title = 'lake depth\n(meters)')+tm_shape(sunapee_shore) +
-  tm_borders() +
+            title = 'lake depth\n(meters)',
+            contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
   tm_shape(maxtp) +
   tm_bubbles('max_tp_mgl',
              col = 'green',
              title.size = 'maximum summer\ntotal phosphorus\n(mg/L)',
              border.col = 'black') +
   tm_layout(legend.position = c('left', 'bottom'),
-            paste0('Maximum Summer Total Phosphorus ', yr))
+            paste0('Maximum Summer Total Phosphorus'))
 
 ## visualize ####
 
 #store faceted max tp - ncol and nrow must be 1
-tp_max_facet <- tm_shape(sun_bathy, bbox = bbox_sun_new)+
+tp_max_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons(border.col = 'blue', col = '#D9F9FA') +
+  tm_shape(sun_bathy)+
   tm_raster(palette = 'Blues',
-            title = 'lake depth\n(meters)')+
-  tm_shape(sunapee_shore) +
-  tm_borders() +
-  tm_shape(subset(maxtp, year >= 2000)) +
+            title = 'lake depth\n(meters)',
+            contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(maxtp) +
   tm_bubbles('max_tp_mgl',
              col = 'green',
              title.size = 'maximum summer\ntotal phosphorus\n(mg/L)',
-             border.col = 'black', 
-             style = 'fixed',
-             size.max = 0.25,
-             n = 5) +
+             border.col = 'black') +
   tm_layout(legend.position = c('left', 'bottom'),
-            'Maximum Summer Total Phosphorus') +
+            paste0('Maximum Summer Total Phosphorus')) +
   tm_facets(by = 'year',
             ncol = 1,
             nrow = 1)
 
 #export gif
 tmap_animation(tp_max_facet,
-               filename = file.path(dump_dir, 'max_tp_summer_2000_2020.gif'),
+               filename = file.path(dump_dir, 'max_tp_summer_2000_2020_v2.gif'),
                fps = 1,
                dpi = 300)
-
 
 
