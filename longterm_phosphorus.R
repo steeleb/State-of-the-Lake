@@ -115,22 +115,22 @@ bbox_sun_new[3] <- bbox_sun_new[3] + (0.1 * xrange) # xmax - right
 bbox_sun_new[2] <- bbox_sun_new[2] - (0.025 * yrange) # ymin - bottom
 bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
-tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
-  tm_shape(sun_ws_water_wgs) + tm_polygons(border.col = 'blue', col = '#D9F9FA') +
-  tm_shape(sun_bathy)+
-  tm_raster(palette = 'Blues',
+## visualize ####
+
+paneled_maxtp = tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
             title = 'lake depth\n(meters)',
             contrast = c(0, 0.5)) +
   tm_shape(sunapee_shore) + tm_borders() +
-  tm_shape(maxtp) +
+  tm_shape(subset(maxtp, subset = year >=1997)) +
   tm_bubbles('max_tp_mgl',
              col = 'green',
              title.size = 'maximum summer\ntotal phosphorus\n(mg/L)',
-             border.col = 'black') +
-  tm_layout(legend.position = c('left', 'bottom'),
-            paste0('Maximum Summer Total Phosphorus'))
-
-## visualize ####
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8)
+paneled_maxtp
+tmap_save(paneled_maxtp, filename = file.path(dump_dir, 'max_tp_summer_paneled_1997_2020.png'))
 
 #store faceted max tp - ncol and nrow must be 1
 tp_max_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
@@ -140,20 +140,19 @@ tp_max_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = '
             title = 'lake depth\n(meters)',
             contrast = c(0, 0.5)) +
   tm_shape(sunapee_shore) + tm_borders() +
-  tm_shape(maxtp) +
+  tm_shape(subset(maxtp, subset = year >=1997)) +
   tm_bubbles('max_tp_mgl',
              col = 'green',
              title.size = 'maximum summer\ntotal phosphorus\n(mg/L)',
-             border.col = 'black') +
-  tm_layout(legend.position = c('left', 'bottom'),
-            paste0('Maximum Summer Total Phosphorus')) +
+             border.col = 'black',
+             scale = 3) +
   tm_facets(by = 'year',
             ncol = 1,
             nrow = 1)
 
 #export gif
 tmap_animation(tp_max_facet,
-               filename = file.path(dump_dir, 'max_tp_summer_2000_2020_v2.gif'),
+               filename = file.path(dump_dir, 'max_tp_summer_ani_1997_2020_v3.gif'),
                fps = 1,
                dpi = 300)
 
