@@ -13,13 +13,13 @@ lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Assoc
 lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
 
 #point to local spatial files folder
-gis_dir <- 'F:/GIS_data_general/US_data/project_data/Sunapee/'
+gis_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
 
 #point to dump directory
-dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/max_summer_tp/'
+dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/summer_tp/'
 
 
-## filter and clean up TP ####
+## filter and clean up TP for inlake TP ####
 #filter for TP
 unique(lmp$parameter)
 
@@ -55,23 +55,30 @@ ggplot(lmp_tp_lake, aes(x = date, y = value)) +
   facet_grid(station ~.) +
   theme_bw()
 
-#aggregate to median value
-lmp_medtp_lake <- lmp_tp_lake %>% 
+#aggregate to median, max, mean, 3rd quartile value
+lmp_agg_lake <- lmp_tp_lake %>% 
   group_by(station, year) %>% 
-  summarize(med_tp_mgl = median(value))
+  summarize(med_tp_ugl = median(value)*1000,
+            max_tp_ugl = max(value)*1000,
+            mean_tp_ugl = mean(value)*1000,
+            thquan_tp_ugl = quantile(value, 0.75)*1000)
 
-ggplot(lmp_medtp_lake, aes(x = year, y = med_tp_mgl, color = station)) +
+ggplot(lmp_agg_lake, aes(x = year, y = max_tp_ugl, color = station)) +
   geom_point() +
   theme_bw()
 
-#aggregate to max tp
-lmp_maxtp_lake <- lmp_tp_lake %>% 
-  group_by(station, year) %>% 
-  summarize(max_tp_mgl = max(value))
-
-ggplot(lmp_maxtp_lake, aes(x = year, y = max_tp_mgl, color = station)) +
+ggplot(lmp_agg_lake, aes(x = year, y = mean_tp_ugl, color = station)) +
   geom_point() +
   theme_bw()
+
+ggplot(lmp_agg_lake, aes(x = year, y = med_tp_ugl, color = station)) +
+  geom_point() +
+  theme_bw()
+
+ggplot(lmp_agg_lake, aes(x = year, y = thquan_tp_ugl, color = station)) +
+  geom_point() +
+  theme_bw()
+
 
 ## get station list and apply loc info ####
 stationlist <- data.frame(unique(lmp_tp_lake$station))
@@ -80,9 +87,7 @@ colnames(stationlist) = 'station'
 stationlist <- left_join(stationlist, lmp_locs)
 
 # apply station info to 2 datasets
-lmp_medtp_lake <- full_join(lmp_medtp_lake, stationlist)
-lmp_maxtp_lake <- full_join(lmp_maxtp_lake, stationlist)
-
+lmp_agg_lake <- full_join(lmp_agg_lake, stationlist)
 
 ## load the spatial layers ####
 
@@ -94,12 +99,11 @@ sun_bathy <- raster(file.path(gis_dir, 'Sunapee Bathymetry/raster_files/original
 sun_stream <- st_read(file.path(gis_dir, 'hydrography/streams.shp'))
 sun_stream_wgs <- st_transform(sun_stream, crs = 'EPSG:4326')
 #sunapee open water
-sun_ws_water <- st_read(file.path(gis_dir, 'hydrography/waterbodies_open_water_no_sun.shp'))
+sun_ws_water <- st_read(file.path(gis_dir, 'hydrography/waterbodies open water.shp'))
 sun_ws_water_wgs <- st_transform(sun_ws_water, crs = 'EPSG:4326')
 
 #table to sf for med and max tp
-medtp <- st_as_sf(lmp_medtp_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
-maxtp <- st_as_sf(lmp_maxtp_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+aggtp <- st_as_sf(lmp_agg_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
 
 #define bounding box fo vis
 #get bounding box of bathy
@@ -115,22 +119,78 @@ bbox_sun_new[3] <- bbox_sun_new[3] + (0.1 * xrange) # xmax - right
 bbox_sun_new[2] <- bbox_sun_new[2] - (0.025 * yrange) # ymin - bottom
 bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
-## visualize ####
+## visualize in paneled plots ####
 
 paneled_maxtp = tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
             title = 'lake depth\n(meters)',
             contrast = c(0, 0.5)) +
   tm_shape(sunapee_shore) + tm_borders() +
-  tm_shape(subset(maxtp, subset = year >=1997)) +
-  tm_bubbles('max_tp_mgl',
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('max_tp_ugl',
              col = 'green',
-             title.size = 'maximum summer\ntotal phosphorus\n(mg/L)',
+             title.size = 'maximum summer\ntotal phosphorus\n(ug/L)',
              border.col = 'black',
              scale = 2) +
   tm_facets(by = 'year',
-            ncol = 8)
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
 paneled_maxtp
 tmap_save(paneled_maxtp, filename = file.path(dump_dir, 'max_tp_summer_paneled_1997_2020.png'))
+
+paneled_meantp = tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
+                                                                     title = 'lake depth\n(meters)',
+                                                                     contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('mean_tp_ugl',
+             col = 'green',
+             title.size = 'mean summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_meantp
+tmap_save(paneled_meantp, filename = file.path(dump_dir, 'mean_tp_summer_paneled_1997_2020.png'))
+
+paneled_medtp = tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
+                                                                      title = 'lake depth\n(meters)',
+                                                                      contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('med_tp_ugl',
+             col = 'green',
+             title.size = 'median summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_medtp
+tmap_save(paneled_medtp, filename = file.path(dump_dir, 'med_tp_summer_paneled_1997_2020.png'))
+
+paneled_thquantp = tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
+                                                                      title = 'lake depth\n(meters)',
+                                                                      contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('thquan_tp_ugl',
+             col = 'green',
+             title.size = 'third quantile summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_thquantp
+tmap_save(paneled_thquantp, filename = file.path(dump_dir, 'thquan_tp_summer_paneled_1997_2020.png'))
+
+
+## visualize in animated plot ####
 
 #store faceted max tp - ncol and nrow must be 1
 tp_max_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
@@ -140,15 +200,17 @@ tp_max_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = '
             title = 'lake depth\n(meters)',
             contrast = c(0, 0.5)) +
   tm_shape(sunapee_shore) + tm_borders() +
-  tm_shape(subset(maxtp, subset = year >=1997)) +
-  tm_bubbles('max_tp_mgl',
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('max_tp_ugl',
              col = 'green',
              title.size = 'maximum summer\ntotal phosphorus\n(mg/L)',
              border.col = 'black',
              scale = 3) +
   tm_facets(by = 'year',
             ncol = 1,
-            nrow = 1)
+            nrow = 1) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
 
 #export gif
 tmap_animation(tp_max_facet,
@@ -157,3 +219,108 @@ tmap_animation(tp_max_facet,
                dpi = 300)
 
 
+#store faceted med tp - ncol and nrow must be 1
+tp_med_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons(border.col = 'blue', col = '#D9F9FA') +
+  tm_shape(sun_bathy)+
+  tm_raster(palette = 'Blues',
+            title = 'lake depth\n(meters)',
+            contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('med_tp_ugl',
+             col = 'green',
+             title.size = 'median summer\ntotal phosphorus\n(mg/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1)+
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+
+#export gif
+tmap_animation(tp_med_facet,
+               filename = file.path(dump_dir, 'med_tp_summer_ani_1997_2020_v3.gif'),
+               fps = 1,
+               dpi = 300)
+
+
+
+#store faceted mean tp - ncol and nrow must be 1
+tp_mean_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons(border.col = 'blue', col = '#D9F9FA') +
+  tm_shape(sun_bathy)+
+  tm_raster(palette = 'Blues',
+            title = 'lake depth\n(meters)',
+            contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('mean_tp_ugl',
+             col = 'green',
+             title.size = 'mean summer\ntotal phosphorus\n(mg/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1)+
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+
+#export gif
+tmap_animation(tp_mean_facet,
+               filename = file.path(dump_dir, 'mean_tp_summer_ani_1997_2020_v3.gif'),
+               fps = 1,
+               dpi = 300)
+
+
+#store faceted thquan tp - ncol and nrow must be 1
+tp_thquan_facet <- tm_shape(sun_stream_wgs, bbox = bbox_sun_new) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons(border.col = 'blue', col = '#D9F9FA') +
+  tm_shape(sun_bathy)+
+  tm_raster(palette = 'Blues',
+            title = 'lake depth\n(meters)',
+            contrast = c(0, 0.5)) +
+  tm_shape(sunapee_shore) + tm_borders() +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_bubbles('thquan_tp_ugl',
+             col = 'green',
+             title.size = 'third quantile summer\ntotal phosphorus\n(mg/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1)+
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+
+#export gif
+tmap_animation(tp_thquan_facet,
+               filename = file.path(dump_dir, 'thquan_tp_summer_ani_1997_2020_v3.gif'),
+               fps = 1,
+               dpi = 300)
+
+
+## look at TP from streams ####
+lmp_summer_tp_stream <- lmp_summer_tp %>% 
+  filter(site_type == 'stream') %>% 
+  arrange(station)
+
+
+stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
+stream_locs <- stream_locs %>% 
+  filter(site_type == 'stream' &
+           status == 'ongoing' &
+           last_year == 2020 &
+           !is.na(lat_dd))
+
+unique(lmp_summer_tp_stream$station)
+
+ggplot(lmp_summer_tp_stream, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~ .)
+
+lmp_summer_tp
