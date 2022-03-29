@@ -19,7 +19,7 @@ gis_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
 dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/summer_tp/'
 
 
-## filter and clean up TP for inlake TP ####
+# filter and clean up TP for inlake TP ####
 #filter for TP
 unique(lmp$parameter)
 
@@ -304,7 +304,7 @@ tmap_animation(tp_thquan_facet,
                dpi = 300)
 
 
-## look at TP from streams ####
+# look at TP from streams ####
 lmp_summer_tp_stream <- lmp_summer_tp %>% 
   filter(site_type == 'stream') %>% 
   arrange(station)
@@ -315,7 +315,10 @@ stream_locs <- stream_locs %>%
   filter(site_type == 'stream' &
            status == 'ongoing' &
            last_year == 2020 &
+           first_year <= 1994 &
            !is.na(lat_dd))
+
+lmp_summer_tp_stream <- right_join(lmp_summer_tp_stream, stream_locs)
 
 unique(lmp_summer_tp_stream$station)
 
@@ -323,4 +326,320 @@ ggplot(lmp_summer_tp_stream, aes(x = date, y = value)) +
   geom_point() +
   facet_grid(station ~ .)
 
-lmp_summer_tp
+#drop a few more incomplete streams
+lmp_summer_tp_stream <- lmp_summer_tp_stream %>% 
+  filter(station != 715 &
+           station != 1415)
+
+ggplot(lmp_summer_tp_stream, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~ .)
+
+#aggregate and change units
+agg_tp_stream <- lmp_summer_tp_stream %>% 
+  group_by(station, year, lat_dd, lon_dd) %>% 
+  summarize(n = n(),
+            med_tp_ugl = median(value)*1000,
+            max_tp_ugl = max(value)*1000,
+            mean_tp_ugl = mean(value)*1000,
+            thquan_tp_ugl = quantile(value, 0.75)*1000) %>% 
+  filter(n > 3) 
+
+## visualize stream TP in paneled plots ----
+
+#table to sf for med and max tp
+aggtp_stream <- st_as_sf(agg_tp_stream, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+
+# sunapee watershed
+sun_ws <- st_read(file.path(gis_dir, 'watersheds/NH_hydro_Sunapee/Lake_Sunapee_watershed.shp'))
+sun_ws_wgs <- st_transform(sun_ws, crs = 'EPSG:4326')
+
+bbox_sun_ws <- st_bbox(sun_ws_wgs)
+
+## visualize in paneled plots ####
+paneled_maxtp_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('max_tp_ugl',
+             col = 'green',
+             title.size = 'maximum summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_maxtp_stream
+
+tmap_save(paneled_maxtp_stream, filename = file.path(dump_dir, 'max_tp_summer_stream_paneled_1997_2020.png'))
+
+paneled_meantp_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('mean_tp_ugl',
+             col = 'green',
+             title.size = 'mean summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_meantp_stream
+
+tmap_save(paneled_meantp_stream, filename = file.path(dump_dir, 'mean_tp_summer_stream_paneled_1997_2020.png'))
+
+paneled_medtp_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('med_tp_ugl',
+             col = 'green',
+             title.size = 'median summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_medtp_stream
+
+tmap_save(paneled_medtp_stream, filename = file.path(dump_dir, 'med_tp_summer_stream_paneled_1997_2020.png'))
+
+paneled_thquantp_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('thquan_tp_ugl',
+             col = 'green',
+             title.size = 'third quantile summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_thquantp_stream
+
+tmap_save(paneled_thquantp_stream, filename = file.path(dump_dir, 'thquan_tp_summer_stream_paneled_1997_2020.png'))
+
+## vis in animated plots ----
+
+#store faceted max tp - ncol and nrow must be 1
+tp_max_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('max_tp_ugl',
+             col = 'green',
+             title.size = 'maximum summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+#export gif
+tmap_animation(tp_max_stream_facet,
+               filename = file.path(dump_dir, 'max_tp_summer_stream_ani_1997_2020.gif'),
+               fps = 1,
+               dpi = 300)
+
+#store faceted med tp - ncol and nrow must be 1
+tp_med_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('med_tp_ugl',
+             col = 'green',
+             title.size = 'median summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+#export gif
+tmap_animation(tp_med_stream_facet,
+               filename = file.path(dump_dir, 'med_tp_summer_stream_ani_1997_2020.gif'),
+               fps = 1,
+               dpi = 300)
+
+#store faceted mean tp - ncol and nrow must be 1
+tp_mean_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('mean_tp_ugl',
+             col = 'green',
+             title.size = 'mean summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+#export gif
+tmap_animation(tp_mean_stream_facet,
+               filename = file.path(dump_dir, 'mean_tp_summer_stream_ani_1997_2020.gif'),
+               fps = 1,
+               dpi = 300)
+
+#store faceted thquan tp - ncol and nrow must be 1
+tp_thquan_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_bubbles('thquan_tp_ugl',
+             col = 'green',
+             title.size = 'third quantile summer\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 3) +
+  tm_facets(by = 'year',
+            ncol = 1,
+            nrow = 1) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+
+#export gif
+tmap_animation(tp_thquan_stream_facet,
+               filename = file.path(dump_dir, 'thquan_tp_summer_stream_ani_1997_2020.gif'),
+               fps = 1,
+               dpi = 300)
+
+
+# both together (paneled only) ----
+
+#max tp stream and lake
+paneled_maxtp_stream_lake = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_symbols(size = 'max_tp_ugl',
+             col = 'green',
+             shape = 24,
+             title.size = 'maximum summer\nstream\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_symbols(size = 'max_tp_ugl',
+             col = 'yellow',
+             shape = 21,
+             title.size = 'maximum summer\nin lake\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_maxtp_stream_lake
+
+tmap_save(paneled_maxtp_stream_lake, filename = file.path(dump_dir, 'max_tp_summer_streamlake_paneled_1997_2020.png'))
+
+#mean tp stream and lake
+paneled_meantp_stream_lake = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_symbols(size = 'mean_tp_ugl',
+             col = 'green',
+             shape = 24,
+             title.size = 'mean summer\nstream\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_symbols(size = 'mean_tp_ugl',
+             col = 'yellow',
+             shape = 21,
+             title.size = 'mean summer\nin lake\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_meantp_stream_lake
+
+tmap_save(paneled_meantp_stream_lake, filename = file.path(dump_dir, 'mean_tp_summer_streamlake_paneled_1997_2020.png'))
+
+#med tp stream and lake
+paneled_medtp_stream_lake = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_symbols(size = 'med_tp_ugl',
+             col = 'green',
+             shape = 24,
+             title.size = 'medain summer\nstream\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_symbols(size = 'med_tp_ugl',
+             col = 'yellow',
+             shape = 21,
+             title.size = 'median summer\nin lake\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_medtp_stream_lake
+
+tmap_save(paneled_medtp_stream_lake, filename = file.path(dump_dir, 'med_tp_summer_streamlake_paneled_1997_2020.png'))
+
+#thquan tp stream and lake
+paneled_thquantp_stream_lake = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(subset(aggtp_stream, subset = year >=1997)) +
+  tm_symbols(size = 'thquan_tp_ugl',
+             col = 'green',
+             shape = 24,
+             title.size = 'third quantile\nsummer stream\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_shape(subset(aggtp, subset = year >=1997)) +
+  tm_symbols(size = 'thquan_tp_ugl',
+             col = 'yellow',
+             shape = 21,
+             title.size = 'third quantile\nsummer in lake\ntotal phosphorus\n(ug/L)',
+             border.col = 'black',
+             scale = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold')
+paneled_thquantp_stream_lake
+
+tmap_save(paneled_thquantp_stream_lake, filename = file.path(dump_dir, 'thquan_tp_summer_streamlake_paneled_1997_2020.png'))
+
+
