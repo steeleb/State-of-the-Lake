@@ -20,16 +20,29 @@ sunapee_ice = read_xls(file.path(datadir, 'sunapee long term ice off dates.xls')
          date_new = as.Date(paste(year, month, day, sep = '-')),
          jday = as.numeric(format(date_new, '%j')))
 
+#calculate linear model and see if significant
+lm_ice = lm(sunapee_ice$jday~sunapee_ice$year)
+summary(lm_ice)
+# it is, so add to graph
+
 ggplot(sunapee_ice, aes(x = year, y = jday)) +
   geom_point() +
   coord_cartesian(ylim = c(59, 140)) +
+  scale_y_continuous(breaks = c(60, 91, 121),
+                     labels = c('Mar 1', 'Apr 1', 'May 1'))+
+  geom_abline(slope = lm_ice$coefficients[2],
+              intercept = lm_ice$coefficients[1],
+              lty = 2,
+              color = 'grey',
+              size = 1) +
   labs(x = NULL,
-       y = 'day of year',
+       y = NULL,
        title = 'day of ice out') +
   final_theme
 
-ggsave(file.path(figdir, 'historical_iceout.png'), 
+ggsave(file.path(figdir, 'historical_iceout_v2.png'), 
        width = 10,
        height = 7,
        units = 'in', 
        dpi = 300)
+
