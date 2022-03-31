@@ -6,6 +6,7 @@ library(rnoaa)
 library(cowplot)
 library(sf)
 library(tmap)
+library(gganimate)
 
 #save final theme for ggplot
 final_theme=theme_bw() +
@@ -287,4 +288,52 @@ ggsave(file.path(figdir, 'map_precip_transducer_2018.png'),
        height = 8,
        width = 12,
        units = 'in')
+
+
+### make map with bubbles increasing with higher flow and precip ----
+
+precip_2018_ani = precip_2018 + transition_states(date) + shadow_mark()
+precip_2018_ani
+
+trans_locs <- trans_locs %>% 
+  mutate(stream_no = case_when(grepl('505', ident) ~ 505,
+                               grepl('665', ident) ~ 665,
+                               grepl('788', ident) ~ 788,
+                               grepl('790', ident) ~ 790,
+                               grepl('805', ident) ~ 805,
+                               grepl('830', ident) ~ 830,
+                               TRUE ~ NA_real_)) %>% 
+  mutate(stream_no = factor(stream_no))
+
+#get max daily value
+trans_2018_daily <- trans_2018 %>% 
+  mutate(date = as.Date(datetime)) %>% 
+  group_by(stream_no, date) %>% 
+  summarise(max_depth_m = max(depth_m, na.rm = T),
+            mean_depth_m = mean(depth_m, na.rm = T))
+#join with locdata
+trans_2018_loc <- left_join(trans_2018_daily, trans_locs)
+#make into sf  
+trans_2018_loc_wgs = st_as_sf(trans_2018_loc, crs = 'EPSG:4326')
+  
+#store animation by day
+animated_2018 = tm_shape(sun_ws_wgs, bbox = bbox_ws_new) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(sunapee_shore) + tm_polygons() +
+  tm_shape(trans_2018_loc_wgs) + 
+    tm_symbols(shape = 21,
+             col = 'blue',
+             size = 'max_depth_m',
+             scale = 3) +
+  tm_facets(by = 'date',
+            ncol = 1,
+            nrow = 1)
+
+#export gif
+tmap_animation(animated_2018,
+               filename = file.path(dump_dir, 'streams_maxdepth_animated_2018.gif'),
+               fps = 1,
+               dpi = 300)
+
 
