@@ -63,21 +63,13 @@ lmp_agg_lake <- lmp_cond_lake %>%
             mean_cond_uScm = mean(value),
             thquan_cond_uScm = quantile(value, 0.75))
 
-ggplot(lmp_agg_lake, aes(x = year, y = max_cond_uScm, color = station)) +
-  geom_point() +
+lmp_agg_lake %>% 
+  mutate(loc = case_when(station < 200 ~ 'near-shore',
+                         TRUE ~ 'deep')) %>% 
+  ggplot(., aes(x = year, y = mean_cond_uScm, shape = loc)) +
+  geom_point(size = 2) +
   theme_bw()
 
-ggplot(lmp_agg_lake, aes(x = year, y = mean_cond_uScm, color = station)) +
-  geom_point() +
-  theme_bw()
-
-ggplot(lmp_agg_lake, aes(x = year, y = med_cond_uScm, color = station)) +
-  geom_point() +
-  theme_bw()
-
-ggplot(lmp_agg_lake, aes(x = year, y = thquan_cond_uScm, color = station)) +
-  geom_point() +
-  theme_bw()
 
 
 ## get station list and apply loc info ####
@@ -553,3 +545,94 @@ lt_cond_med <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
             title = 'Median Summer\nConductivity\n(Jun-Sept,\n2010-2020)\n ',
             title.fontface = 'bold')
 tmap_save(lt_cond_med, filename = file.path(dump_dir, 'median_longterm_conductivity_2010-2020.png'))
+
+
+# create scatterplot of in-lake deep/shallow and stream input (of those which inlet to lake) over time----
+lmp_summer_cond_deep <- lmp_summer_cond %>% 
+  filter((station == 200 |
+            station == 210 |
+            station == 220 |
+            station == 230)
+         & site_type == 'lake')
+
+lmp_summer_cond_shallow <- lmp_summer_cond %>% 
+  filter(station < 100 & site_type == 'lake')
+unique(lmp_summer_cond_shallow$station)
+
+lmp_summer_cond_inlet <- lmp_summer_cond_stream %>% 
+  filter(station > 250 & station <1000 & 
+           site_type == 'stream'&
+           status == 'ongoing' &
+           last_year == 2020 &
+           first_year <= 1994 &
+           !is.na(lat_dd) &
+           station != 680)#this one is quite a bit upstream
+unique(lmp_summer_cond_inlet$station)
+
+## aggregate and join ----
+lmp_cond_deep_agg <- lmp_summer_cond_deep %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75)) %>% 
+  mutate(data = 'deep in-lake')
+
+lmp_cond_shallow_agg <- lmp_summer_cond_shallow %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75)) %>% 
+  mutate(data = 'shallow in-lake')
+
+lmp_cond_inlet_agg <- lmp_summer_cond_inlet %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75)) %>% 
+  mutate(data = 'stream inlet')
+
+lmp_cond_aggyear <- full_join(lmp_cond_deep_agg, lmp_cond_shallow_agg) %>% 
+  full_join(., lmp_cond_inlet_agg) %>% 
+  mutate(data = factor(data, levels = c('deep in-lake', 'shallow in-lake', 'stream inlet')))
+
+## plot mean and median ----
+ggplot(lmp_cond_aggyear, aes(x = as.numeric(year), y = mean_cond_uScm)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'average annual conductivity (uS/cm)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_avecond.png'),
+       height = 6,
+       width = 9,
+       dpi = 300,
+       units ='in')
+
+ggplot(lmp_cond_aggyear, aes(x = as.numeric(year), y = med_cond_uScm)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual conductivity (uS/cm)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medcond.png'),
+       height = 6,
+       width = 9,
+       dpi = 300,
+       units ='in')
+
