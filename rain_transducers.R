@@ -226,6 +226,17 @@ precip2020 <- ggplot(subset(precip_sun,
        y = 'total daily\nprecipitation (mm)')
 precip2020
 
+temp2020 <- ggplot(subset(trans_data_smooth, 
+                          subset =  datetime >= as.Date('2020-06-26') & datetime < as.Date('2020-07-08')),
+                   aes(x = datetime, y = temp_C, color = stream_no)) +
+  geom_path(size = 1) +
+  labs(x = NULL,
+       y = 'stream temperature\n(\u00B0C)') +
+  final_theme +
+  scale_color_colorblind() +
+  theme(legend.position = 'none')
+temp2020
+
 legend = get_legend(ggplot(subset(trans_temp, 
                                   subset = datetime < as.Date('2020-04-01')),
                            aes(x = datetime, y = depth_m, color = stream_no)) +
@@ -238,20 +249,20 @@ legend = get_legend(ggplot(subset(trans_temp,
 legend2020 = plot_grid(legend,NULL,
                        ncol = 1)
 
-plot2020 = plot_grid(trans2020, precip2020,
+plot2020 = plot_grid(trans2020, precip2020, temp2020,
                      ncol = 1)
 
 plot_leg2020 = plot_grid(plot2020, legend2020,
                          rel_widths = c(0.9, 0.1))
 
-title = ggdraw() + draw_label('Late Season 2020 Stream Depth and Weather Observations',
+title = ggdraw() + draw_label('Late Season 2020 Stream Depth, Temperature and Weather Observations',
                               fontface = 'bold')
 
 plot_grid(title, plot_leg2020,
           ncol = 1,
           rel_heights = c(0.05, 0.95))
 
-ggsave(file.path(figdir, 'late2020_transducer_precip.png'),
+ggsave(file.path(figdir, 'late2020_transducer_precip_temp.png'),
        width = 10,
        height = 7,
        units = 'in',
