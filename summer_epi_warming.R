@@ -36,12 +36,21 @@ leb_summer <- leb %>%
   filter(month >=6 & month <10)
 
 ggplot(leb_summer, aes(x = year,  y = airTempC)) +
-  geom_boxplot(aes(group = year)) +
-  geom_smooth(method = 'lm', se = F) +
+  geom_jitter(color = 'grey', width = 0.1) +
+  geom_boxplot(aes(group = year), alpha = 0.5) +
+  geom_smooth(method = 'lm', se = F, lty = 2) +
   labs(x = NULL,
-       y = 'average daily air temperature (°C)',
-       title = 'Summer (Jun-Sept) Air Temperature') +
-  final_theme
+       y = 'average daily air temperature',
+       title = 'Summer (Jun-Sept) Air Temperature at Lebanon Airport') +
+  final_theme +
+  scale_y_continuous(breaks = c(10, 20, 30), labels = c('10°C | 50°F', '20°C | 68°F', '30°C | 86°F')) +
+  theme(axis.text.y = element_text(angle = 45))
+
+ggsave(file.path(fig_dir, 'leb_summer_temp.png'),
+       width = 9,
+       height = 4,
+       dpi = 300,
+       units = 'in')
 
 summary(lm(leb_summer$airTempC ~ leb_summer$year))
 
@@ -91,11 +100,22 @@ lmp_temp_lake_surf <- lmp_summer_temp %>%
   filter(depth_m <=0.5) 
 
 ggplot(lmp_temp_lake_surf, aes(x = year, y = value)) +
-  geom_boxplot(aes(group = year)) +
+  geom_jitter(color = 'grey', width = 0.1) +
+  geom_boxplot(aes(group = year), alpha = 0.5) +
   geom_smooth(method = 'lm', se = F) +
   labs(x = NULL, 
-       y = 'surface water temperature')
-  final_theme
+       y = 'surface water temperature',
+       title = 'Summer (Jun-Sept) Surface Water Temperature at Deep Sites\nat Lake Sunapee') +
+  final_theme+
+  scale_y_continuous(breaks = c(15, 20, 25), labels = c('15°C | 59°F', '20°C | 68°F', '25°C | 77°F')) +
+  theme(axis.text.y = element_text(angle = 45))
+
+ggsave(file.path(fig_dir, 'lmp_deep_surface_summer_temp.png'),
+       width = 9,
+       height = 4.3,
+       dpi = 300,
+       units = 'in')
+
 
 #linear model
 lm_temp_surf = lm(lmp_temp_lake_surf$value ~ lmp_temp_lake_surf$year)
@@ -119,12 +139,15 @@ ggplot(lmp_temp_lake_surf_7, aes(x = year, y = value)) +
   geom_smooth(method = 'lm', se = F, lty=2) +
   final_theme +
   labs(x = NULL,
-       y = 'water temperature (°C)',
-       title = 'July deep sites surface temperature') +
-  scale_y_continuous(limits = c(10, 30))
+       y = 'water temperature',
+       title = 'July Lake Sunapee deep sites surface temperature') +
+  scale_y_continuous(breaks = c(10, 15, 20, 25, 30), 
+                     labels = c('10°C | 50°F', '15°C | 59°F', '20°C | 68°F', '25°C | 77°F','30°C | 86°F'),
+                     limits = c(15, 30)) +
+  theme(axis.text.y = element_text(angle = 20))
 ggsave(file.path(fig_dir, 'lmp_july_water_temp_hist.png'),
-       width = 10,
-       height = 4,
+       width = 9,
+       height = 3,
        dpi = 300,
        units = 'in')
 
@@ -138,12 +161,15 @@ ggplot(lmp_temp_lake_surf_8, aes(x = year, y = value)) +
   geom_smooth(method = 'lm', se = F, lty=2) +
   final_theme +
   labs(x = NULL,
-       y = 'water temperature (°C)',
-       title = 'August deep sites surface temperature') +
-  scale_y_continuous(limits = c(10, 30))
+       y = 'water temperature',
+       title = 'August Lake Sunapee deep sites surface temperature') +
+  scale_y_continuous(breaks = c(10, 15, 20, 25, 30), 
+                     labels = c('10°C | 50°F', '15°C | 59°F', '20°C | 68°F', '25°C | 77°F','30°C | 86°F'),
+                     limits = c(15, 30)) +
+  theme(axis.text.y = element_text(angle = 20))
 ggsave(file.path(fig_dir, 'lmp_aug_water_temp_hist.png'),
-       width = 10,
-       height = 4,
+       width = 9,
+       height = 3,
        dpi = 300,
        units = 'in')
 
@@ -191,8 +217,8 @@ buoy_alltemp <- full_join(buoy_surface_hourly, buoymet_match_hourly) %>%
   pivot_longer(names_to = 'variable',
                values_to = 'value', 
                -c(datetime, date, hour)) %>% 
-  mutate(variable = case_when(variable == 'airTemperature_mean_degC' ~ 'hourly air temperature',
-                              variable == 'waterTemperature_mean_degC_0p1m' ~ 'hourly surface water temperature'))
+  mutate(variable = case_when(variable == 'airTemperature_mean_degC' ~ 'air temperature',
+                              variable == 'waterTemperature_mean_degC_0p1m' ~ 'near surface water temperature'))
 
 ggplot(buoy_alltemp, aes(x = datetime, y = value, color = variable)) +
   geom_line() +
@@ -200,12 +226,16 @@ ggplot(buoy_alltemp, aes(x = datetime, y = value, color = variable)) +
   # facet_grid(variable ~ .) +
   final_theme +
   labs(x = NULL, 
-       y = 'temperature (°C)',
+       y = 'temperature',
        title = '2021 LSPA/GLEON Buoy Data') +
   theme(legend.position = 'bottom') +
-    scale_color_manual(values = c('grey', 'dark blue'))
+    scale_color_manual(values = c('grey', 'dark blue'), name = ' ') +
+  scale_y_continuous(breaks = c(10, 15, 20, 25, 30), 
+                     labels = c('10°C | 50°F', '15°C | 59°F', '20°C | 68°F', '25°C | 77°F','30°C | 86°F'),
+                     limits = c(10, 30)) +
+  theme(axis.text.y = element_text(angle = 30))
 
-ggsave(file.path(fig_dir, 'buoy_airwater_temp_2021.png'),
+  ggsave(file.path(fig_dir, 'buoy_airwater_temp_2021.png'),
        width = 10,
        height = 4,
        dpi = 300,
@@ -213,10 +243,10 @@ ggsave(file.path(fig_dir, 'buoy_airwater_temp_2021.png'),
 
 ### number of days with temp >30degC
 # get max temp from newport weather station
-newport_85_20 <-  ghcnd_search(stationid = 'USC00275868',
-                               date_min = '1985-01-01',
+newport_92_20 <-  ghcnd_search(stationid = 'USC00275868',
+                               date_min = '1992-01-01',
                                date_max = '2022-01-01')
-newport_max <- newport_85_20$tmax %>% 
+newport_max <- newport_92_20$tmax %>% 
   mutate(temp_max_degC = tmax/10) %>% 
   filter(!is.na(temp_max_degC))
 
@@ -224,13 +254,16 @@ newport_max <-newport_max %>%
   mutate(date = as.Date(date),
          year = as.numeric(format(date, '%Y')),
          month = as.numeric(format(date, '%m'))) 
-  
+
+ggplot(newport_max, aes(x = date, y = temp_max_degC)) +
+  geom_point()
+
 newport_gt30 <- newport_max %>% 
   filter(temp_max_degC >=30) %>% 
   group_by(year) %>% 
   summarize(n_gt30 = n())
 
-year = seq(from = 1985, to =2021, by = 1)
+year = seq(from = 1992, to =2021, by = 1)
 
 yearlist <- data.frame(year)
 
@@ -239,16 +272,14 @@ newport_gt30 <- full_join(yearlist, newport_gt30) %>%
                             TRUE ~ as.numeric(n_gt30)))
 
 ggplot(newport_gt30, aes(x = year,y = as.numeric(n_gt30))) +
-  geom_bar(stat = 'identity', aes(fill = as.numeric(n_gt30))) +
+  geom_bar(stat = 'identity') +
   labs(x = NULL,
-       y = 'number of days\nwith temperature >=30°C/86°F') +
+       y = 'number of days with\nmaximum air temperature \u2265 30°C | 86°F') +
   final_theme +
-  geom_smooth(method = 'lm', se = F) +
-  scale_fill_distiller(palette = 'YlOrRd', direction = 'reverse') +
   theme(legend.position = 'none')
 
 ggsave(file.path(fig_dir, 'summer_temp_gt30.png'),
-       width = 10,
+       width = 8,
        height = 4,
        dpi = 300,
        units = 'in')
