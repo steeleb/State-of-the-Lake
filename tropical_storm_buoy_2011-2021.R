@@ -13,6 +13,9 @@ final_theme=theme_bw() +
 #colorpallete for smears
 color_palette <- colorRampPalette(c("darkred","red","orange", "#edf8b1","#41b6c4", "#225ea8","#253494", "#081d58","black"),bias = 2, space = "rgb")(n = 144)
 
+#deg c to deg f function
+deg_trans = function(x) ((x *9/5) + 32)
+
 #dump dir
 dumpdir = 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/tropical_storms/temp/'
 figdir = 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/tropical_storms/'
@@ -29,41 +32,44 @@ buoy_2021 <- buoy_2021 %>%
   select(datetime, waterTemperature_degC_0p1m, waterTemperature_degC_1m, waterTemperature_degC_2m, waterTemperature_degC_3m,
          waterTemperature_degC_4m, waterTemperature_degC_5m, waterTemperature_degC_6m, waterTemperature_degC_7m, 
          waterTemperature_degC_8m, waterTemperature_degC_9m,waterTemperature_degC_10m) %>%
-  rename(wtr_0.1 = 'waterTemperature_degC_0p1m',
-         wtr_1 = 'waterTemperature_degC_1m',
-         wtr_2 = 'waterTemperature_degC_2m',
-         wtr_3 = 'waterTemperature_degC_3m',
-         wtr_4 = 'waterTemperature_degC_4m',
-         wtr_5 = 'waterTemperature_degC_5m',
-         wtr_6 = 'waterTemperature_degC_6m',
-         wtr_7 = 'waterTemperature_degC_7m',
-         wtr_8 = 'waterTemperature_degC_8m',
-         wtr_9 = 'waterTemperature_degC_9m',
-         wtr_10 = 'waterTemperature_degC_10m')
+  rename(wtr_0.3 = 'waterTemperature_degC_0p1m',#convert to feet
+         wtr_3.3 = 'waterTemperature_degC_1m',
+         wtr_6.6 = 'waterTemperature_degC_2m',
+         wtr_9.8 = 'waterTemperature_degC_3m',
+         wtr_13.1 = 'waterTemperature_degC_4m',
+         wtr_16.4 = 'waterTemperature_degC_5m',
+         wtr_19.7 = 'waterTemperature_degC_6m',
+         wtr_23 = 'waterTemperature_degC_7m',
+         wtr_26.2 = 'waterTemperature_degC_8m',
+         wtr_29.5 = 'waterTemperature_degC_9m',
+         wtr_32.8 = 'waterTemperature_degC_10m') %>% 
+  mutate_at(vars(c('wtr_0.3', 'wtr_3.3', 'wtr_6.6', 'wtr_9.8', 'wtr_13.1', 'wtr_16.4', 
+                   'wtr_19.7', 'wtr_23', 'wtr_26.2', 'wtr_29.5', 'wtr_32.8')),
+            ~ deg_trans(.))
 head(buoy_2021)
 
 #save text file in order to read in time series
 buoy_2021 %>%
   arrange(datetime) %>%
   mutate(datetime=as.character(datetime)) %>%
-  write_delim(paste0(dumpdir, "sun.ts.temp.c.2021.txt"), delim='\t')
+  write_delim(paste0(dumpdir, "sun.ts.temp.f.2021.txt"), delim='\t')
 
 #read in as timeseries
-sun.temp.c.2021 <- load.ts(file.path(dumpdir, "sun.ts.temp.c.2021.txt"), tz='UTC')
+sun.temp.f.2021 <- load.ts(file.path(dumpdir, "sun.ts.temp.f.2021.txt"), tz='UTC')
 
 #create heatmap
 png(file.path(figdir, '2021_Henri_heatmap.png'),
-    width = 10, height = 4.5, units = 'in', res = 300)
-wtr.heat.map(sun.temp.c.2021, 
+    width = 8, height = 4, units = 'in', res = 300)
+wtr.heat.map(sun.temp.f.2021, 
              xlim=c(as.POSIXct('2021-08-20', tz='UTC'), as.POSIXct('2021-08-25', tz='UTC')),
-             zlim=c(11,27), 
+             zlim=c(52, 82), 
              plot.title=title(main="Temperature Heat Map Aug 20-25, 2021", 
-                              ylab="Depth (m)", 
+                              ylab="Depth (ft)", 
                               xlab=''), 
              plot.axes = { axis.POSIXct(side=1, x=sun.temp.c.2021$datetime, 
                                         at = (seq(as.POSIXct('2021-08-20', tz='UTC'), as.POSIXct('2021-08-25', tz='UTC'), by = "day")), 
-                                        format = "%b %d"); axis(2) },
-             key.title=title(main="Water\nTemp\n(\u00B0C)", 
+                                        format = "%b %d"); axis(2)},
+             key.title=title(main="Water\nTemp\n(\u00B0F)", 
                              font.main=1, 
                              cex.main=1)
 )
@@ -83,7 +89,8 @@ head(sun_met_aug2021filt)
 sun_wind_aug2021 <- sun_met_aug2021filt %>% 
   select(datetime, windGustSpeed_mps) %>% 
   pivot_longer(names_to = 'variable', values_to = 'value', -datetime) %>% 
-  mutate(variable = case_when(variable == 'windGustSpeed_mps' ~ 'wind gust speed\n(meters per second)'))
+  mutate(variable = case_when(variable == 'windGustSpeed_mps' ~ 'wind gust speed\n(feet per second)')) %>% 
+  mutate(value = value *3.28)
 
 ggplot(sun_wind_aug2021, aes(x = datetime, y = value)) +
   geom_path() +
@@ -96,7 +103,7 @@ ggplot(sun_wind_aug2021, aes(x = datetime, y = value)) +
   scale_x_datetime(minor_breaks = '1 day')
 
 ggsave(file.path(figdir, '2021_Henri_wind.png'),
-       width = 10, height = 4)
+       width = 8, height = 2.5)
 
 ## Isaias Aug 4 2020 ----
 
@@ -111,16 +118,19 @@ buoy_2020 <- buoy_2020 %>%
   select(datetime, waterTemperature_degC_0p75m, waterTemperature_degC_1p75m, waterTemperature_degC_2p75m, waterTemperature_degC_3p75m,
          waterTemperature_degC_4p75m, waterTemperature_degC_5p75m, waterTemperature_degC_6p75m, waterTemperature_degC_7p75m, 
          waterTemperature_degC_8p75m, waterTemperature_degC_9p75m) %>%
-  rename(wtr_0.5 = 'waterTemperature_degC_0p75m',
-         wtr_1.5 = 'waterTemperature_degC_1p75m',
-         wtr_2.5 = 'waterTemperature_degC_2p75m',
-         wtr_3.5= 'waterTemperature_degC_3p75m',
-         wtr_4.5= 'waterTemperature_degC_4p75m',
-         wtr_5.5= 'waterTemperature_degC_5p75m',
-         wtr_6.5= 'waterTemperature_degC_6p75m',
-         wtr_7.5= 'waterTemperature_degC_7p75m',
-         wtr_8.5= 'waterTemperature_degC_8p75m',
-         wtr_9.5= 'waterTemperature_degC_9p75m')
+  rename(wtr_2.5 = 'waterTemperature_degC_0p75m', #convert to feet
+         wtr_5.7 = 'waterTemperature_degC_1p75m',
+         wtr_9 = 'waterTemperature_degC_2p75m',
+         wtr_12.3 = 'waterTemperature_degC_3p75m',
+         wtr_15.8 = 'waterTemperature_degC_4p75m',
+         wtr_18.9 = 'waterTemperature_degC_5p75m',
+         wtr_22.1= 'waterTemperature_degC_6p75m',
+         wtr_25.4= 'waterTemperature_degC_7p75m',
+         wtr_28.7= 'waterTemperature_degC_8p75m',
+         wtr_32= 'waterTemperature_degC_9p75m') %>% 
+  mutate_at(vars(c('wtr_2.5', 'wtr_5.7', 'wtr_9', 'wtr_12.3', 'wtr_15.8', 'wtr_18.9', 
+                   'wtr_22.1', 'wtr_25.4', 'wtr_28.7', 'wtr_32')),
+            ~ deg_trans(.))
 head(buoy_2020)
 
 #2020 has an issue of redundant datetimes in a few instances
@@ -138,24 +148,24 @@ buoy_2020 <- full_join(buoy_2020, dupes) %>%
 buoy_2020 %>%
   arrange(datetime) %>%
   mutate(datetime=as.character(datetime)) %>%
-  write_delim(paste0(dumpdir, "sun.ts.temp.c.2020.txt"), delim='\t')
+  write_delim(paste0(dumpdir, "sun.ts.temp.f.2020.txt"), delim='\t')
 
 #read in as timeseries
-sun.temp.c.2020 <- load.ts(file.path(dumpdir, "sun.ts.temp.c.2020.txt"), tz='UTC')
+sun.temp.f.2020 <- load.ts(file.path(dumpdir, "sun.ts.temp.f.2020.txt"), tz='UTC')
 
 #create heatmap
 png(file.path(figdir, '2020_Isaias_heatmap.png'),
-       width = 10, height = 4.5, units = 'in', res = 300)
-wtr.heat.map(sun.temp.c.2020, 
+       width = 8, height = 4, units = 'in', res = 300)
+wtr.heat.map(sun.temp.f.2020, 
              xlim=c(as.POSIXct('2020-08-02', tz='UTC'), as.POSIXct('2020-08-08', tz='UTC')),
-             zlim=c(12,27), 
+             zlim=c(52,82),
              plot.title=title(main="Temperature Heat Map Aug 2-8, 2020", 
-                              ylab="Depth (m)", 
+                              ylab="Depth (ft)", 
                               xlab=''), 
              plot.axes = { axis.POSIXct(side=1, x=sun.temp.c.2020$datetime, 
                                         at = (seq(as.POSIXct('2020-05-01', tz='UTC'), 
                                                   as.POSIXct('2020-12-01', tz='UTC'), by = "day")), format = "%b %d"); axis(2) },
-             key.title=title(main="Water\nTemp\n(\u00B0C)", 
+             key.title=title(main="Water\nTemp\n(\u00B0F)", 
                              font.main=1, 
                              cex.main=1)
 )
@@ -174,9 +184,9 @@ sun_met_augfilt <- sun_met %>%
 
 sun_tempwind_aug <- sun_met_augfilt %>% 
   select(datetime, windGustSpeed_mps) %>% 
-  pivot_longer(names_to = 'variable', values_to = 'value', -datetime) %>% 
-  mutate(variable = case_when(variable == 'airTemperature_degC' ~ 'air temperature\n(\u00B0C)',
-                              variable == 'windGustSpeed_mps' ~ 'wind gust speed\n(meters per second)'))
+  pivot_longer(names_to = 'variable', values_to = 'value', -datetime)  %>% 
+  mutate(variable = case_when(variable == 'windGustSpeed_mps' ~ 'wind gust speed\n(feet per second)')) %>% 
+  mutate(value = value *3.28)
 
 ggplot(sun_tempwind_aug, aes(x = datetime, y = value)) +
   geom_path() +
@@ -188,7 +198,7 @@ ggplot(sun_tempwind_aug, aes(x = datetime, y = value)) +
         strip.text.y = element_text(size = 12, face = "bold.italic"))
 
 ggsave(file.path(figdir, '2020_Isaias_met.png'),
-       width = 10, height = 4)
+       width = 8, height = 3)
 
 
 ## 2019 no sig tropical storms? ----
@@ -300,6 +310,7 @@ sun_met_sept2018filt <- sun_met_2018 %>%
 #no met data in Sept
 
 ## Irene Aug 28 2011 ----
+
 ### temp heatmap -----
 #read in buoy data from EDI
 buoy_2011 <- read_csv('https://portal.edirepository.org/nis/dataviewer?packageid=edi.499.3&entityid=26fed3d0522dab567be961851f21dcb9')
@@ -311,40 +322,44 @@ buoy_2011 <- buoy_2011 %>%
   select(datetime, waterTemperature_degC_0p5m, waterTemperature_degC_1p5m, waterTemperature_degC_2p5m, waterTemperature_degC_3p5m,
          waterTemperature_degC_4p5m, waterTemperature_degC_5p5m, waterTemperature_degC_6p5m, waterTemperature_degC_7p5m, 
          waterTemperature_degC_8p5m, waterTemperature_degC_9p5m) %>%
-  rename(wtr_0.1 = 'waterTemperature_degC_0p5m',
-         wtr_1.5 = 'waterTemperature_degC_1p5m',
-         wtr_2.5 = 'waterTemperature_degC_2p5m',
-         wtr_3.5 = 'waterTemperature_degC_3p5m',
-         wtr_4.5 = 'waterTemperature_degC_4p5m',
-         wtr_5.5 = 'waterTemperature_degC_5p5m',
-         wtr_6.5 = 'waterTemperature_degC_6p5m',
-         wtr_7.5 = 'waterTemperature_degC_7p5m',
-         wtr_8.5 = 'waterTemperature_degC_8p5m',
-         wtr_9.5 = 'waterTemperature_degC_9p5m')
+  rename(wtr_0.3 = 'waterTemperature_degC_0p5m', #convert to feet
+         wtr_4.9 = 'waterTemperature_degC_1p5m',
+         wtr_8.2 = 'waterTemperature_degC_2p5m',
+         wtr_11.5 = 'waterTemperature_degC_3p5m',
+         wtr_14.8 = 'waterTemperature_degC_4p5m',
+         wtr_18 = 'waterTemperature_degC_5p5m',
+         wtr_21.3 = 'waterTemperature_degC_6p5m',
+         wtr_24.6 = 'waterTemperature_degC_7p5m',
+         wtr_27.9 = 'waterTemperature_degC_8p5m',
+         wtr_31.2 = 'waterTemperature_degC_9p5m') %>% 
+  mutate_at(vars(c('wtr_0.3', 'wtr_4.9', 'wtr_8.2', 'wtr_11.5', 'wtr_14.8', 'wtr_18', 
+                   'wtr_21.3', 'wtr_24.6', 'wtr_27.9', 'wtr_31.2')),
+            ~ deg_trans(.))
+
 head(buoy_2011)
 
 #save text file in order to read in time series
 buoy_2011 %>%
   arrange(datetime) %>%
   mutate(datetime=as.character(datetime)) %>%
-  write_delim(paste0(dumpdir, "sun.ts.temp.c.2011.txt"), delim='\t')
+  write_delim(paste0(dumpdir, "sun.ts.temp.f.2011.txt"), delim='\t')
 
 #read in as timeseries
-sun.temp.c.2011 <- load.ts(file.path(dumpdir, "sun.ts.temp.c.2011.txt"), tz='UTC')
+sun.temp.f.2011 <- load.ts(file.path(dumpdir, "sun.ts.temp.f.2011.txt"), tz='UTC')
 
 #create heatmap
 png(file.path(figdir, '2011_Irene_heatmap.png'),
-    width = 10, height = 4.5, units = 'in', res = 300)
-wtr.heat.map(sun.temp.c.2011, 
+    width = 8, height = 4, units = 'in', res = 300)
+wtr.heat.map(sun.temp.f.2011, 
              xlim=c(as.POSIXct('2011-08-25', tz='UTC'), as.POSIXct('2011-08-31', tz='UTC')),
-             zlim=c(11,25), 
+             zlim=c(52,82), 
              plot.title=title(main="Temperature Heat Map Aug 25-31, 2011", 
-                              ylab="Depth (m)", 
+                              ylab="Depth (ft)", 
                               xlab=''), 
              plot.axes = { axis.POSIXct(side=1, x=sun.temp.c.2011$datetime, 
                                         at = (seq(as.POSIXct('2011-08-25', tz='UTC'), as.POSIXct('2011-08-31', tz='UTC'), by = "day")), 
                                         format = "%b %d"); axis(2) },
-             key.title=title(main="Water\nTemp\n(\u00B0C)", 
+             key.title=title(main="Water\nTemp\n(\u00B0F)", 
                              font.main=1, 
                              cex.main=1)
 )
@@ -364,7 +379,8 @@ head(sun_met_aug2011filt)
 sun_wind_aug2011 <- sun_met_aug2011filt %>% 
   select(datetime, windSpeedInstantaneous_mps) %>% 
   pivot_longer(names_to = 'variable', values_to = 'value', -datetime) %>% 
-  mutate(variable = case_when(variable == 'windSpeedInstantaneous_mps' ~ 'instantaneous wind speed\n(meters per second)'))
+  mutate(variable = case_when(variable == 'windSpeedInstantaneous_mps' ~ 'instantaneous wind speed\n(feet per second)'))%>% 
+  mutate(value = value *3.28)
 
 ggplot(sun_wind_aug2011, aes(x = datetime, y = value)) +
   geom_path() +
@@ -377,4 +393,4 @@ ggplot(sun_wind_aug2011, aes(x = datetime, y = value)) +
   scale_x_datetime(minor_breaks = '1 day')
 
 ggsave(file.path(figdir, '2011_Irene_wind.png'),
-       width = 10, height = 4)
+       width = 8, height = 2.5)

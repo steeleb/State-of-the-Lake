@@ -23,6 +23,7 @@ dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/s
 chlaramp = c('#D0FAFB', '#D0FBF7', '#D0FBF1', '#B4F8D2', '#B4FAAF', '#B6E28D', '#A7CF82', '#9AC373', '#8EBB63','#559E12', '#448B02')
 chlaval = c(0, 0.5, 1,  2, 4, 5, 10, 20, 50, 100, 250)
 
+chlaramp2 = c('#feebe2','#fcc5c0','#fa9fb5','#f768a1','#c51b8a','#7a0177')
 
 # filter and clean up chla for inlake chla ####
 #filter for chla
@@ -113,15 +114,10 @@ bbox_sun_new[3] <- bbox_sun_new[3] + (0.1 * xrange) # xmax - right
 bbox_sun_new[2] <- bbox_sun_new[2] - (0.05 * yrange) # ymin - bottom
 bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
-## visualize in paneled plots ####
-
-paneled_maxchla = tm_shape(sun_bathy, bbox = bbox_sun_new) + 
-    tm_raster(
-      palette = 'Greys',
-      title = 'lake depth\n(meters)',
-      contrast = c(0, 0.5)) +
-  tm_shape(sunapee_shore) + 
+## visualize in paneled plots on the trophic scale ####
+paneled_maxchla = tm_shape(sunapee_shore, bbox = bbox_sun_new) + 
     tm_borders() +
+    tm_fill() +
   tm_shape(subset(aggchla, subset = year >=1997)) +
     tm_dots('max_chla_ugl',
             palette = chlaramp,
@@ -137,18 +133,14 @@ paneled_maxchla = tm_shape(sun_bathy, bbox = bbox_sun_new) +
             panel.label.bg.color = 'white')
 paneled_maxchla
 tmap_save(paneled_maxchla, filename = file.path(dump_dir, 'max_chla_summer_paneled_1997_2020.png'),
-          width = 9,
+          width = 8,
           height = 6,
           units = 'in',
           dpi = 300)
 
-paneled_meanchla = tm_shape(sun_bathy, bbox = bbox_sun_new) + 
-  tm_raster(
-    palette = 'Greys',
-    title = 'lake depth\n(meters)',
-    contrast = c(0, 0.5)) +
-  tm_shape(sunapee_shore) + 
+paneled_meanchla = tm_shape(sunapee_shore, bbox = bbox_sun_new) + 
   tm_borders() +
+  tm_fill() +
   tm_shape(subset(aggchla, subset = year >=1997)) +
   tm_dots('mean_chla_ugl',
           palette = chlaramp,
@@ -164,18 +156,14 @@ paneled_meanchla = tm_shape(sun_bathy, bbox = bbox_sun_new) +
             panel.label.bg.color = 'white')
 paneled_meanchla
 tmap_save(paneled_meanchla, filename = file.path(dump_dir, 'mean_chla_summer_paneled_1997_2020.png'),
-          width = 9,
+          width = 8,
           height = 6,
           units = 'in',
           dpi = 300)
 
-paneled_medchla = tm_shape(sun_bathy, bbox = bbox_sun_new) + 
-  tm_raster(
-    palette = 'Greys',
-    title = 'lake depth\n(meters)',
-    contrast = c(0, 0.5)) +
-  tm_shape(sunapee_shore) + 
+paneled_medchla = tm_shape(sunapee_shore, bbox = bbox_sun_new) + 
   tm_borders() +
+  tm_fill()+
   tm_shape(subset(aggchla, subset = year >=1997)) +
   tm_dots('med_chla_ugl',
           palette = chlaramp,
@@ -191,23 +179,19 @@ paneled_medchla = tm_shape(sun_bathy, bbox = bbox_sun_new) +
             panel.label.bg.color = 'white')
 paneled_medchla
 tmap_save(paneled_medchla, filename = file.path(dump_dir, 'med_chla_summer_paneled_1997_2020.png'),
-          width = 9,
+          width = 8,
           height = 6,
           units = 'in',
           dpi = 300)
 
-paneled_thquanchla = tm_shape(sun_bathy, bbox = bbox_sun_new) + 
-  tm_raster(
-    palette = 'Greys',
-    title = 'lake depth\n(meters)',
-    contrast = c(0, 0.5)) +
-  tm_shape(sunapee_shore) + 
+## visualize in paneled plots in standalone scale ####
+paneled_maxchla = tm_shape(sunapee_shore, bbox = bbox_sun_new) + 
   tm_borders() +
+  tm_fill() +
   tm_shape(subset(aggchla, subset = year >=1997)) +
-  tm_dots('thquan_chla_ugl',
-          palette = chlaramp,
-          breaks = chlaval,
-          title = 'third quantile summer\nchlorophyll-a\n(ug/L)',
+  tm_dots('max_chla_ugl',
+          palette = chlaramp2,
+          title = 'maximum summer\nchlorophyll-a\n(ug/L)',
           shape = 21,
           border.col = 'black',
           size = 2) +
@@ -216,10 +200,53 @@ paneled_thquanchla = tm_shape(sun_bathy, bbox = bbox_sun_new) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold',
             panel.label.bg.color = 'white')
-paneled_thquanchla
-tmap_save(paneled_thquanchla, 
-          filename = file.path(dump_dir, 'thquan_chla_summer_paneled_1997_2020.png'),
-          width = 9,
+paneled_maxchla
+tmap_save(paneled_maxchla, filename = file.path(dump_dir, 'max_chla_summer_paneled_1997_2020_standalone.png'),
+          width = 8,
+          height = 6,
+          units = 'in',
+          dpi = 300)
+
+paneled_meanchla = tm_shape(sunapee_shore, bbox = bbox_sun_new) + 
+  tm_borders() +
+  tm_fill() +
+  tm_shape(subset(aggchla, subset = year >=1997)) +
+  tm_dots('mean_chla_ugl',
+          palette = chlaramp2,
+          title = 'average summer\nchlorophyll-a\n(ug/L)',
+          shape = 21,
+          border.col = 'black',
+          size = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold',
+            panel.label.bg.color = 'white')
+paneled_meanchla
+tmap_save(paneled_meanchla, filename = file.path(dump_dir, 'mean_chla_summer_paneled_1997_2020_standalone.png'),
+          width = 8,
+          height = 6,
+          units = 'in',
+          dpi = 300)
+
+paneled_medchla = tm_shape(sunapee_shore, bbox = bbox_sun_new) + 
+  tm_borders() +
+  tm_fill()+
+  tm_shape(subset(aggchla, subset = year >=1997)) +
+  tm_dots('med_chla_ugl',
+          palette = chlaramp2,
+          title = 'median summer\nchlorophyll-a\n(ug/L)',
+          shape = 21,
+          border.col = 'black',
+          size = 2) +
+  tm_facets(by = 'year',
+            ncol = 8) +
+  tm_layout(panel.label.size = 1.5,
+            panel.label.fontface = 'bold',
+            panel.label.bg.color = 'white')
+paneled_medchla
+tmap_save(paneled_medchla, filename = file.path(dump_dir, 'med_chla_summer_paneled_1997_2020_standalone.png'),
+          width = 8,
           height = 6,
           units = 'in',
           dpi = 300)
@@ -465,7 +492,7 @@ unique(lmp_summer_chla_shallow$station)
 
 ## aggregate and join ----
 lmp_chla_deep_agg <- lmp_summer_chla_deep %>% 
-  group_by(year) %>% 
+  group_by(year, station) %>% 
   summarize(n = n(),
             med_chla_ugl = median(value),
             max_chla_ugl = max(value),
@@ -474,7 +501,7 @@ lmp_chla_deep_agg <- lmp_summer_chla_deep %>%
   mutate(data = 'deep')
 
 lmp_chla_shallow_agg <- lmp_summer_chla_shallow %>% 
-  group_by(year) %>% 
+  group_by(year, station) %>% 
   summarize(n = n(),
             med_chla_ugl = median(value),
             max_chla_ugl = max(value),
@@ -483,26 +510,9 @@ lmp_chla_shallow_agg <- lmp_summer_chla_shallow %>%
   mutate(data = 'shallow')
 
 lmp_chla_aggyear <- full_join(lmp_chla_deep_agg, lmp_chla_shallow_agg) %>% 
-  mutate(data = factor(data, levels = c('deep', 'shallow')))
+  mutate(data = factor(data, levels = c('shallow', 'deep')))
 
 ## plot mean and median ----
-ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = mean_chla_ugl)) +
-  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2) +
-  facet_grid(data ~ .) +
-  theme_bw() +
-  theme(legend.position =  'none',
-        strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
-  scale_color_colorblind() +
-  labs(x = NULL,
-       y = 'average annual chlolorphyll-a (ug/L)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_chla.png'),
-       height = 6,
-       width = 9,
-       dpi = 300,
-       units ='in')
 
 ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = mean_chla_ugl)) +
   geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
@@ -515,10 +525,10 @@ ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = mean_chla_ugl)) +
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
   labs(x = NULL,
-       y = 'average annual total phosporus (ug/L)')
+       y = 'average annual total phosporus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_avechla.png'),
-       height = 6,
-       width = 9,
+       height = 4,
+       width = 7,
        dpi = 300,
        units ='in')
 
@@ -533,9 +543,9 @@ ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = med_chla_ugl)) +
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
   labs(x = NULL,
-       y = 'median annual total phosporus (ug/L)')
+       y = 'median annual total phosporus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_medchla.png'),
-       height = 6,
-       width = 9,
+       height = 4,
+       width = 7,
        dpi = 300,
        units ='in')

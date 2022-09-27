@@ -8,6 +8,8 @@ library(cowplot)
 library(sf)
 library(tmap)
 library(gganimate)
+library(plotly)
+library(ggridges)
 
 #save final theme for ggplot
 final_theme=theme_bw() +
@@ -127,16 +129,33 @@ head(sun_met_2020)
 ## visualization of early 2018 using ggplot ----
 
 #first quarter of 2018 transducer data
-trans2018 <- ggplot(subset(trans_2018, 
-              subset = datetime < as.Date('2018-04-01')),
-       aes(x = datetime, y = depth_m, color = stream_no)) +
+trans2018 <- trans_2018 %>% 
+  mutate(stream_no = factor(stream_no, 
+                            levels = c(505, 830, 805, 790, 788, 665),
+                            labels = c('Otter Pond - 505',
+                                       'Herrick South - 830', 
+                                       'King Hill - 805',
+                                       'Blodget North - 790',
+                                       'Blodget South - 788',
+                                       'Chandler Johnson - 665'))) %>% 
+  filter(datetime < as.Date('2018-04-01')) %>% 
+  ggplot(aes(x = datetime, y = depth_m, color = stream_no)) +
   geom_path(size = 1) +
   labs(x = NULL,
-       y = 'stream depth\n(meters)') +
+       y = 'stream depth') +
   final_theme +
   scale_color_colorblind() +
-  theme(legend.position = 'none')
+  scale_y_continuous(breaks = c(0, 0.5, 1), 
+                     labels = c('', 
+                                '0.5 m | 1.6 ft',
+                                 '1 m | 3.3 ft'),
+                     limits = c(0, 1.3)) +
+  theme(legend.position = 'none',
+        axis.text.y = element_text(angle = 45))
 trans2018
+
+trans2018a <- plot_grid(NULL, trans2018,
+                       rel_widths =c(0.025, 0.99))
 
 #first quarter of year precip data
 precip2018 <- ggplot(subset(precip_sun, 
@@ -145,7 +164,11 @@ precip2018 <- ggplot(subset(precip_sun,
   geom_col(color = '#0009FF', fill = '#0009FF') +
   final_theme +
   labs(x = NULL,
-       y = 'total daily\nprecipitation (mm)')
+       y = 'total daily\nprecipitation') +
+  scale_y_continuous(breaks = c(0, 20, 40),
+                     labels = c('', '2 cm | 0.8 in', '4 cm | 1.6 in')) +
+  theme(axis.text.y = element_text(angle = 45))
+                     
 precip2018
 
 #first quarter of year temperature data
@@ -163,26 +186,37 @@ airtemp2018 <- ggplot(subset(sun_met_2018,
   final_theme +
   theme(legend.position = 'none')+
   labs(x = NULL,
-       y = 'air temperature\n(\u00B0C)')
+       y = 'air temperature') +
+  scale_y_continuous(breaks = c(-20, -10, 0, 10, 20),
+                     labels = c('-20 °C | -4 °F', '-10 °C | 14 °F', '0 °C | 32 °F', '10 °C | 50 °F', '20 °C | 68 °F'))
 airtemp2018
 
-legend = get_legend(ggplot(subset(trans_2018, 
-                                  subset = datetime < as.Date('2018-04-01')),
-                           aes(x = datetime, y = depth_m, color = stream_no)) +
+legend = get_legend(trans_2018 %>% 
+                      mutate(stream_no = factor(stream_no, 
+                                                levels = c(505, 830, 805, 790, 788, 665),
+                                                labels = c('Otter Pond - 505',
+                                                           'Herrick South - 830', 
+                                                           'King Hill - 805',
+                                                           'Blodget North - 790',
+                                                           'Blodget South - 788',
+                                                           'Chandler Johnson - 665'))) %>% 
+                      filter(datetime < as.Date('2018-04-01')) %>% 
+                      ggplot(aes(x = datetime, y = depth_m, color = stream_no)) +
                       geom_path(size = 1) +
                       labs(x = NULL,
-                           y = 'stream depth (meters)') +
+                           y = 'stream depth') +
                       final_theme +
-                      scale_color_colorblind(name = 'stream\nnumber'))
+                      scale_color_colorblind() +
+                      guides(color=guide_legend(title = '')))
 
-legend2018 = plot_grid(legend,NULL,NULL,
+legend2018 = plot_grid(legend,NULL,NULL, NULL,
                    ncol = 1)
 
-plot2018 = plot_grid(trans2018, precip2018, airtemp2018,
+plot2018 = plot_grid(trans2018a, precip2018, airtemp2018,
           ncol = 1)
 
 plot_leg2018 = plot_grid(plot2018, legend2018,
-                     rel_widths = c(0.9, 0.1))
+                     rel_widths = c(0.8, 0.22))
 
 title = ggdraw() + draw_label('Early 2018 Stream Depth and Weather Observations',
                               fontface = 'bold')
@@ -192,12 +226,71 @@ plot_grid(title, plot_leg2018,
           rel_heights = c(0.05, 0.95))
 
 ggsave(file.path(figdir, 'early2018_transducer_precip_temp.png'),
-       width = 10,
-       height = 7,
+       width = 9,
+       height = 5,
        units = 'in',
        dpi = 300)
 
-## visualization of early 2020 using ggplot ----
+# and without the temp
+legend2018b = plot_grid(legend,NULL,NULL,
+                       ncol = 1)
+
+trans2018b = plot_grid(NULL, trans2018,
+                       rel_widths = c(0.03, 0.98))
+trans2018b
+
+plot2018b = plot_grid(trans2018b, precip2018,
+                     ncol = 1)
+
+plot_leg2018b = plot_grid(plot2018b, legend2018b,
+                         rel_widths = c(0.8, 0.22))
+
+titleb = ggdraw() + draw_label('Early 2018 Stream Depth and Precipitation',
+                              fontface = 'bold')
+
+plot_grid(titleb, plot_leg2018b,
+          ncol = 1,
+          rel_heights = c(0.1, 0.9))
+
+ggsave(file.path(figdir, 'early2018_transducer_precip.png'),
+       width = 8,
+       height = 4,
+       units = 'in',
+       dpi = 300)
+
+ggplot()
+
+### use plotly to render 3d v of early 2018 ----
+trans_2018_factor <- trans_2018 %>%
+  mutate(stream_no = factor(stream_no, 
+                            levels = c(505, 830, 805, 790, 788, 665),
+                            labels = c('Otter Pond - 505',
+                                       'Herrick South - 830', 
+                                       'King Hill - 805',
+                                       'Blodget North - 790',
+                                       'Blodget South - 788',
+                                       'Chandler Johnson - 665'))) %>%
+  filter(datetime < as.Date('2018-04-01'))
+
+### use ggridges to create layered data ----
+
+ggplot(trans_2018_factor, aes(x = datetime, y = fct_rev(stream_no), height = depth_m, fill = stream_no)) +
+  geom_ridgeline(scale = 2, alpha = 0.5) +
+  final_theme +
+  scale_fill_colorblind() +
+  labs(x = NULL,
+       y = NULL,
+        fill = '') +
+  theme_ridges() +
+  theme(legend.position = 'none')
+  
+ggsave(filename = file.path(figdir, '1Q2018_depth_ridges.png'),
+       height = 3, 
+       width = 8,
+       dpi = 300)
+
+
+## visualization of late 2020 using ggplot ----
 
 #third quarter of 2020 transducer data
 trans_data_smooth <- trans_temp %>% 
@@ -353,8 +446,10 @@ trans_2020_facet <- ggplot(trans_2020,
   geom_path(size = 1) +
   facet_grid(stream_nameno ~ .) +
   labs(x = NULL,
-       y = 'stream depth\n(meters)') +
-  scale_x_datetime(limits = c(as.POSIXct('2020-01-01'), as.POSIXct('2021-01-01'))) +
+       y = 'stream depth') +
+  scale_x_datetime(limits = c(as.POSIXct('2020-01-01'), as.POSIXct('2021-01-01')), minor_breaks = '1 month') +
+  scale_y_continuous(breaks = c(0, 0.5, 1, 1.5),
+                     labels = c('', '0.5 m | 1.6 ft', '1 m | 3.3 ft', '1.5 m | 4.9 ft')) +
   final_theme_2 
 trans_2020_facet
 
@@ -368,45 +463,48 @@ precip_2020 <- precip_sun %>%
   facet_grid(station ~ .) +
   final_theme_2 +
   labs(x = NULL,
-       y = 'total daily\nprecipitation (mm)')
+       y = 'total daily\nprecipitation') +
+  scale_x_date(minor_breaks = '1 month') +
+  scale_y_continuous(breaks = c(0, 10, 20, 30, 40, 50),
+                     labels = c(' ', '1 cm | 0.4 in', '', '3 cm | 1.2 in', '', '5 cm | 2.0 in'))
 precip_2020
 
 #fix width of precip 
-precip_2020_widthfix <- plot_grid(NULL, precip_2020,
-          rel_widths = c(0.002, 0.99),
+trans_2020_widthfix <- plot_grid(NULL, trans_2020_facet,
+          rel_widths = c(0.012, 0.99),
           nrow = 1)
 # store stream and precip data together
-precip_trans_2020 <- plot_grid(precip_2020_widthfix, trans_2020_facet,
+precip_trans_2020 <- plot_grid(precip_2020, trans_2020_widthfix,
           rel_heights = c(1,5.5),
           ncol = 1)
 
-#convert transducer map to tm_grob
-bbox_ws_new[3] <- bbox_ws_new[3] + (0.1 * xrange) # xmax - right
-transducer_map <- tm_shape(sun_ws_wgs, bbox = bbox_ws_new) + tm_borders() +
-  tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
-  tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(sunapee_shore) + tm_polygons() +
-  tm_shape(trans_locs_wgs) + 
-  tm_symbols(shape = 21,
-             col = 'green',
-             size = 1) +
-  tm_text('name_abbv',
-          ymod = 'ymod',
-          xmod = 1,
-          fontface = 'bold',
-          size = 0.75,
-          just = 'left')
+# #convert transducer map to tm_grob
+# bbox_ws_new[3] <- bbox_ws_new[3] + (0.1 * xrange) # xmax - right
+# transducer_map <- tm_shape(sun_ws_wgs, bbox = bbox_ws_new) + tm_borders() +
+#   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
+#   tm_shape(sun_ws_water_wgs) + tm_polygons() +
+#   tm_shape(sunapee_shore) + tm_polygons() +
+#   tm_shape(trans_locs_wgs) + 
+#   tm_symbols(shape = 21,
+#              col = 'green',
+#              size = 1) +
+#   tm_text('name_abbv',
+#           ymod = 'ymod',
+#           xmod = 1,
+#           fontface = 'bold',
+#           size = 0.75,
+#           just = 'left')
+# 
+# trans_map = tmap_grob(transducer_map)
+# 
+# map_trans_precip = plot_grid(trans_map, precip_trans_2020,
+#           rel_widths = c(0.5,0.5))
+# map_trans_precip
 
-trans_map = tmap_grob(transducer_map)
-
-map_trans_precip = plot_grid(trans_map, precip_trans_2020,
-          rel_widths = c(0.5,0.5))
-map_trans_precip
-
-ggsave(file.path(figdir, 'map_precip_transducer_2020.png'), 
+ggsave(file.path(figdir, 'precip_transducer_2020.png'), 
        dpi = 300,
-       height = 8,
-       width = 12,
+       height = 7,
+       width = 6,
        units = 'in')
 
 

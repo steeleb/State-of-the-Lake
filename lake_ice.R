@@ -26,10 +26,10 @@ summary(lm_ice)
 # it is, so add to graph
 
 ggplot(sunapee_ice, aes(x = year, y = jday)) +
-  geom_point() +
-  coord_cartesian(ylim = c(59, 140)) +
-  scale_y_continuous(breaks = c(60, 91, 121),
-                     labels = c('Mar 1', 'Apr 1', 'May 1'))+
+  geom_point(size = 2.5) +
+  coord_cartesian(ylim = c(70, 140)) +
+  scale_y_continuous(breaks = c(74, 91, 105, 121, 135),
+                     labels = c('Mar 15', 'Apr 1','Apr 15', 'May 1', 'May 15'))+
   geom_abline(slope = lm_ice$coefficients[2],
               intercept = lm_ice$coefficients[1],
               lty = 2,
@@ -37,12 +37,12 @@ ggplot(sunapee_ice, aes(x = year, y = jday)) +
               size = 1) +
   labs(x = NULL,
        y = NULL,
-       title = 'day of ice out') +
+       title = 'Day of Ice Out from 1869 to 2022\nLake Sunapee, NH') +
   final_theme
 
-ggsave(file.path(figdir, 'historical_iceout_v2.png'), 
-       width = 10,
-       height = 7,
+ggsave(file.path(figdir, 'historical_iceout_v3.png'), 
+       width = 8,
+       height = 6,
        units = 'in', 
        dpi = 300)
 
