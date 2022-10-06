@@ -407,9 +407,41 @@ lmp_turb_aggyear <- full_join(lmp_turb_deep_agg, lmp_turb_shallow_agg) %>%
   full_join(., lmp_turb_inlet_agg) %>% 
   mutate(data = factor(data, levels = c( 'stream', 'shallow in-lake','deep in-lake')))
 
+## aggregate and join per year only ----
+lmp_turb_deep_agg_yr <- lmp_summer_turb_deep %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_turb_ntu = median(value),
+            max_turb_ntu = max(value),
+            mean_turb_ntu = mean(value),
+            thquan_turb_ntu = quantile(value, 0.75)) %>% 
+  mutate(data = 'deep in-lake')
+
+lmp_turb_shallow_agg_yr <- lmp_summer_turb_shallow %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_turb_ntu = median(value),
+            max_turb_ntu = max(value),
+            mean_turb_ntu = mean(value),
+            thquan_turb_ntu = quantile(value, 0.75)) %>% 
+  mutate(data = 'shallow in-lake')
+
+lmp_turb_inlet_agg_yr <- lmp_summer_turb_inlet %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_turb_ntu = median(value),
+            max_turb_ntu = max(value),
+            mean_turb_ntu = mean(value),
+            thquan_turb_ntu = quantile(value, 0.75)) %>% 
+  mutate(data = 'stream')
+
+lmp_turb_aggyear_yr <- full_join(lmp_turb_deep_agg_yr, lmp_turb_shallow_agg_yr) %>% 
+  full_join(., lmp_turb_inlet_agg_yr) %>% 
+  mutate(data = factor(data, levels = c( 'stream', 'shallow in-lake','deep in-lake')))
+
+
 ## plot mean and median ----
 ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = mean_turb_ntu)) +
-  geom_abline(slope = 0, intercept = 5, lty = 2, color = 'black') +
   geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
   geom_point(aes(color = data, shape = data), size = 2) +
   facet_grid(data ~ .) +
@@ -420,14 +452,13 @@ ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = mean_turb_ntu)) +
   scale_color_colorblind() +
   labs(x = NULL,
        y = 'average annual turbidity per site per year (NTU)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_turb.png'),
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_meanturbpersite.png'),
        height = 5,
        width = 7,
        dpi = 300,
        units ='in')
 
 ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = mean_turb_ntu)) +
-  geom_abline(slope = 0, intercept = 5, lty = 2, color = 'black') +
   geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
   geom_point(aes(color = data, shape = data), size = 2) +
   facet_grid(data ~ ., scales = 'free_y') +
@@ -438,7 +469,76 @@ ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = mean_turb_ntu)) +
   scale_color_colorblind() +
   labs(x = NULL,
        y = 'average annual turbidity per site per year (NTU)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_turb_freey.png'),
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_meanturbpersite_freey.png'),
+       height = 5,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = med_turb_ntu)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual turbidity per site per year (NTU)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbpersite.png'),
+       height = 5,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = med_turb_ntu)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ ., scales = 'free_y') +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual turbidity per site per year (NTU)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbpersite_freey.png'),
+       height = 5,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+
+ggplot(lmp_turb_aggyear_yr, aes(x = as.numeric(year), y = med_turb_ntu)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual turbidity per year (NTU)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbperyear.png'),
+       height = 5,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+ggplot(lmp_turb_aggyear_yr, aes(x = as.numeric(year), y = mean_turb_ntu)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'average annual turbidity per year (NTU)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_meanturbperyear.png'),
        height = 5,
        width = 7,
        dpi = 300,
