@@ -57,7 +57,6 @@ lmp_tp_lake <- lmp_summer_tp %>%
            station == 220 |
            station == 230) %>% 
   filter(layer == 'E' | layer == 'I')
-# write_csv(lmp_tp_lake, 'c:/Users/steeleb/Desktop/sunapee raw tp.csv')
 
 ggplot(lmp_tp_lake, aes(x = date, y = value)) +
   geom_point() +
@@ -73,7 +72,6 @@ lmp_agg_lake <- lmp_tp_lake %>%
             mean_tp_ugl = mean(value)*1000,
             thquan_tp_ugl = quantile(value, 0.75)*1000)
 
-# write_csv(lmp_agg_lake, 'c:/Users/steeleb/Desktop/sunapee aggregated tp.csv')
 
 ggplot(lmp_agg_lake, aes(x = year, y = max_tp_ugl, color = station)) +
   geom_point() +
