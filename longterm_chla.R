@@ -41,8 +41,7 @@ lmp_summer_chla = lmp_chla %>%
 
 #add location info
 lmp_summer_chla <- lmp_summer_chla %>% 
-  mutate(loc_type = case_when(station < 100 ~ 'near-shore',
-                              station >=100 & station< 200 ~ 'other',
+  mutate(loc_type = case_when(station < 200 ~ 'near-shore',
                               TRUE ~ 'deep')) %>% 
   filter(loc_type != 'other') %>% 
   filter(!is.na(value))
@@ -486,7 +485,7 @@ lmp_summer_chla_deep <- lmp_summer_chla %>%
          & site_type == 'lake')
 
 lmp_summer_chla_shallow <- lmp_summer_chla %>% 
-  filter(station < 100 & site_type == 'lake')
+  filter(station < 200 & site_type == 'lake')
 unique(lmp_summer_chla_shallow$station)
 
 
@@ -512,6 +511,28 @@ lmp_chla_shallow_agg <- lmp_summer_chla_shallow %>%
 lmp_chla_aggyear <- full_join(lmp_chla_deep_agg, lmp_chla_shallow_agg) %>% 
   mutate(data = factor(data, levels = c('shallow', 'deep')))
 
+## aggregate and join by year ----
+lmp_chla_deep_agg_yr <- lmp_summer_chla_deep %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_chla_ugl = median(value),
+            max_chla_ugl = max(value),
+            mean_chla_ugl = mean(value),
+            thquan_chla_ugl = quantile(value, 0.75)) %>% 
+  mutate(data = 'deep')
+
+lmp_chla_shallow_agg_yr <- lmp_summer_chla_shallow %>% 
+  group_by(year) %>% 
+  summarize(n = n(),
+            med_chla_ugl = median(value),
+            max_chla_ugl = max(value),
+            mean_chla_ugl = mean(value),
+            thquan_chla_ugl = quantile(value, 0.75)) %>% 
+  mutate(data = 'shallow')
+
+lmp_chla_aggyear_yr <- full_join(lmp_chla_deep_agg_yr, lmp_chla_shallow_agg_yr) %>% 
+  mutate(data = factor(data, levels = c('shallow', 'deep')))
+
 ## plot mean and median ----
 
 ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = mean_chla_ugl)) +
@@ -525,8 +546,24 @@ ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = mean_chla_ugl)) +
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
   labs(x = NULL,
-       y = 'average annual total phosporus per site per year (ug/L)')
+       y = 'average annual chlorophyll-a per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_avechla.png'),
+       height = 4,
+       width = 7,
+       dpi = 300,
+       units ='in')
+ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = mean_chla_ugl)) +
+  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'average annual chlorophyll-a per site per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_avechla_noloess.png'),
        height = 4,
        width = 7,
        dpi = 300,
@@ -543,8 +580,93 @@ ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = med_chla_ugl)) +
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
   labs(x = NULL,
-       y = 'median annual total phosporus per site per year (ug/L)')
+       y = 'median annual chlorophyll-a per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_medchla.png'),
+       height = 4,
+       width = 7,
+       dpi = 300,
+       units ='in')
+ggplot(lmp_chla_aggyear, aes(x = as.numeric(year), y = med_chla_ugl)) +
+  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual chlorophyll-a per site per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_medchla_noloess.png'),
+       height = 4,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+
+ggplot(lmp_chla_aggyear_yr, aes(x = as.numeric(year), y = mean_chla_ugl)) +
+  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'average annual chlorophyll-a per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_avechla_peryear.png'),
+       height = 4,
+       width = 7,
+       dpi = 300,
+       units ='in')
+ggplot(lmp_chla_aggyear_yr, aes(x = as.numeric(year), y = mean_chla_ugl)) +
+  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'average annual chlorophyll-a per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_avechla_peryear_noloess.png'),
+       height = 4,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+ggplot(lmp_chla_aggyear_yr, aes(x = as.numeric(year), y = med_chla_ugl)) +
+  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
+  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual chlorophyll-a per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_medchla_peryear.png'),
+       height = 4,
+       width = 7,
+       dpi = 300,
+       units ='in')
+ggplot(lmp_chla_aggyear_yr, aes(x = as.numeric(year), y = med_chla_ugl)) +
+  geom_abline(slope = 0, intercept = 1, lty = 2, color = 'black') +
+  geom_point(aes(color = data, shape = data), size = 2) +
+  facet_grid(data ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  labs(x = NULL,
+       y = 'median annual chlorophyll-a per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_LT_medchla_peryear_noloess.png'),
        height = 4,
        width = 7,
        dpi = 300,

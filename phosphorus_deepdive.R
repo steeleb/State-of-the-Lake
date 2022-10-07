@@ -14,9 +14,6 @@ lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Assoc
 #read in station locations
 lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
 
-# #point to local spatial files folder
-# gis_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
-
 #point to dump directory
 dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/summer_tp/'
 
@@ -49,7 +46,8 @@ lmp_tp_shallow <- lmp_summer_tp %>%
 ## load stream data ----
 lmp_summer_tp_stream <- lmp_summer_tp %>% 
   filter(site_type == 'stream') %>% 
-  arrange(station)
+  arrange(station) %>% 
+  mutate(site_type = 'tributary')
 
 
 stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
@@ -58,7 +56,8 @@ stream_locs <- stream_locs %>%
            status == 'ongoing' &
            last_year == 2020 &
            first_year <= 1994 &
-           !is.na(lat_dd))
+           !is.na(lat_dd)) %>% 
+  mutate(site_type = 'tributary')
 
 lmp_summer_tp_stream <- right_join(lmp_summer_tp_stream, stream_locs)
 
@@ -81,7 +80,7 @@ lmp_summer_tp_stream <- lmp_summer_tp_stream %>%
 ggplot(lmp_tp_shallow, aes(x = as.numeric(year), y = tp_ugl)) +
   geom_point(shape = 17, color = '#E69F00') +
   facet_grid(station ~.) +
-  gghighlight(tp_ugl > 20,  use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 20ug/L, the approximate average from the past few years
+  gghighlight(tp_ugl > 30, use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 20ug/L, the approximate average from the past few years
   labs(x = NULL,
        y = paste0('Total Phosphorus (µg/L)')) +
   theme_bw()
@@ -90,7 +89,46 @@ ggsave(filename = file.path(dump_dir, 'alldata_allsites_shallow_tp.png'),
           height = 6,
           units = 'in',
           dpi = 300)
-
+ggplot(lmp_tp_shallow, aes(x = as.numeric(year), y = tp_ugl)) +
+  geom_point(shape = 17, color = '#E69F00') +
+  facet_grid(station ~., scales= 'free_y') +
+  gghighlight(tp_ugl > 30,  use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 20ug/L, the approximate average from the past few years
+  labs(x = NULL,
+       y = paste0('Total Phosphorus (µg/L)')) +
+  theme_bw()
+ggsave(filename = file.path(dump_dir, 'alldata_allsites_shallow_tp_freey.png'),
+       width = 4.5,
+       height = 6,
+       units = 'in',
+       dpi = 300)
+lmp_tp_shallow %>% 
+  filter(tp_ugl < 80) %>% 
+  ggplot(., aes(x = as.numeric(year), y = tp_ugl)) +
+  geom_point(shape = 17, color = '#E69F00') +
+  facet_grid(station ~., scales= 'free_y') +
+  gghighlight(tp_ugl > 30,  use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 20ug/L, the approximate average from the past few years
+  labs(x = NULL,
+       y = paste0('Total Phosphorus (µg/L)')) +
+  theme_bw()
+ggsave(filename = file.path(dump_dir, 'alldata_allsites_shallow_tp_freey_lt80.png'),
+       width = 4.5,
+       height = 6,
+       units = 'in',
+       dpi = 300)
+lmp_tp_shallow %>% 
+  filter(tp_ugl < 80) %>% 
+  ggplot(., aes(x = as.numeric(year), y = tp_ugl)) +
+  geom_point(shape = 17, color = '#E69F00') +
+  facet_grid(station ~.) +
+  gghighlight(tp_ugl > 30,  use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 20ug/L, the approximate average from the past few years
+  labs(x = NULL,
+       y = paste0('Total Phosphorus (µg/L)')) +
+  theme_bw()
+ggsave(filename = file.path(dump_dir, 'alldata_allsites_shallow_tp_lt80.png'),
+       width = 4.5,
+       height = 6,
+       units = 'in',
+       dpi = 300)
 
 ggplot(lmp_summer_tp_stream, aes(x = as.numeric(year), y = tp_ugl)) +
   geom_point() +
@@ -100,6 +138,35 @@ ggplot(lmp_summer_tp_stream, aes(x = as.numeric(year), y = tp_ugl)) +
        y = paste0('Total Phosphorus (µg/L)')) +
   theme_bw()
 ggsave(filename = file.path(dump_dir, 'alldata_allsites_stream_tp.png'),
+       width = 4.5,
+       height = 8,
+       units = 'in',
+       dpi = 300)
+ggplot(lmp_summer_tp_stream, aes(x = as.numeric(year), y = tp_ugl)) +
+  geom_point() +
+  facet_grid(station ~.) +
+  scale_y_continuous(limits = c(0, ))
+  gghighlight(tp_ugl > 25,  use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 25ug/L, the approximate average from the past few years
+  labs(x = NULL,
+       y = paste0('Total Phosphorus (µg/L)')) +
+  theme_bw()
+ggsave(filename = file.path(dump_dir, 'alldata_allsites_stream_tp.png'),
+       width = 4.5,
+       height = 8,
+       units = 'in',
+       dpi = 300)
+
+#filter outliers
+lmp_summer_tp_stream %>% 
+  filter(tp_ugl < 400) %>% 
+  ggplot(., aes(x = as.numeric(year), y = tp_ugl)) +
+  geom_point() +
+  facet_grid(station ~., scales = 'free_y') +
+  gghighlight(tp_ugl > 25,  use_direct_label = FALSE, calculate_per_facet = TRUE) + #highlight the values above 25ug/L, the approximate average from the past few years
+  labs(x = NULL,
+       y = paste0('Total Phosphorus (µg/L)')) +
+  theme_bw()
+ggsave(filename = file.path(dump_dir, 'alldata_allsites_stream_tp_freey_lt400.png'),
        width = 4.5,
        height = 8,
        units = 'in',
