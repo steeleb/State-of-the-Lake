@@ -1,17 +1,12 @@
 # code to visualize long term phosphorus in lake sunapee
 
+source(conductivity_summary.R)
+
 library(sf)
 library(tmap)
 library(raster)
 library(gifski)
-library(tidyverse)
 library(ggthemes)
-
-# read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/LSPALMP_1986-2020_v2021-03-29.csv')
-
-#read in station locations
-lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
 
 #point to local spatial files folder
 gis_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
@@ -26,68 +21,6 @@ final_theme=theme_bw() +
   theme(axis.text=element_text(size=12),
         axis.title=element_text(size=14,face="bold"),
         plot.title=element_text(size=16, face='bold', hjust=0.5)) #save as a grom
-
-# filter and clean up cond for inlake cond ####
-#filter for cond
-unique(lmp$parameter)
-
-lmp_cond <- lmp %>% 
-  filter(parameter == 'cond_uScm') %>% 
-  mutate(date = as.Date(date)) %>% 
-  mutate(year = format(date, '%Y')) %>% 
-  mutate(month = as.numeric(format(date, '%m')))
-
-#filter jun - sept
-lmp_summer_cond = lmp_cond %>% 
-  filter(month >=6 & month <=9)
-
-#filter for in-lake and longterm sites; epi and integrated only
-lmp_cond_lake <- lmp_summer_cond %>% 
-  filter(site_type == 'lake') %>% 
-  filter(station == 10 |
-           station == 20 |
-           station == 30 |
-           station == 60 |
-           station == 70 |
-           station == 80 |
-           station == 90 |
-           station == 110 |
-           station == 200 |
-           station == 210 |
-           station == 220 |
-           station == 230) %>% 
-  filter(layer == 'E' | layer == 'I')
-
-ggplot(lmp_cond_lake, aes(x = date, y = value)) +
-  geom_point() +
-  facet_grid(station ~.) +
-  theme_bw()
-
-#aggregate to median, max, mean, 3rd quartile value
-lmp_agg_lake <- lmp_cond_lake %>% 
-  group_by(station, year) %>% 
-  summarize(med_cond_uScm = median(value),
-            max_cond_uScm = max(value),
-            mean_cond_uScm = mean(value),
-            thquan_cond_uScm = quantile(value, 0.75))
-
-lmp_agg_lake %>% 
-  mutate(loc = case_when(station < 200 ~ 'near-shore',
-                         TRUE ~ 'deep')) %>% 
-  ggplot(., aes(x = year, y = mean_cond_uScm, shape = loc)) +
-  geom_point(size = 2) +
-  theme_bw()
-
-
-
-## get station list and apply loc info ####
-stationlist <- data.frame(unique(lmp_cond_lake$station))
-colnames(stationlist) = 'station'
-
-stationlist <- left_join(stationlist, lmp_locs)
-
-# apply station info to 2 datasets
-lmp_agg_lake <- full_join(lmp_agg_lake, stationlist)
 
 ## load the spatial layers ####
 
@@ -159,11 +92,7 @@ tmap_save(paneled_medcond, filename = file.path(dump_dir, 'med_cond_summer_panel
           height = 6,
           dpi = 300)
 
-
-
-
 ## visualize in animated plot ####
-
 
 #store faceted med cond - ncol and nrow must be 1
 cond_med_facet <- tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
@@ -217,47 +146,6 @@ tmap_animation(cond_mean_facet,
 
 
 
-# look at cond from streams ####
-lmp_summer_cond_stream <- lmp_summer_cond %>% 
-  filter(site_type == 'stream') %>% 
-  arrange(station)
-
-
-stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
-stream_locs <- stream_locs %>% 
-  filter(site_type == 'stream' &
-           status == 'ongoing' &
-           last_year == 2020 &
-           first_year <= 1994 &
-           !is.na(lat_dd))
-
-
-lmp_summer_cond_stream <- right_join(lmp_summer_cond_stream, stream_locs)
-
-unique(lmp_summer_cond_stream$station)
-
-ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
-  geom_point() +
-  facet_grid(station ~ .)
-
-#drop a few more incomplete streams
-lmp_summer_cond_stream <- lmp_summer_cond_stream %>% 
-  filter(station != 715 &
-           station != 1415)
-
-ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
-  geom_point() +
-  facet_grid(station ~ .)
-
-#aggregate and change units
-agg_cond_stream <- lmp_summer_cond_stream %>% 
-  group_by(station, year, lat_dd, lon_dd) %>% 
-  summarize(n = n(),
-            med_cond_uScm = median(value),
-            max_cond_uScm = max(value),
-            mean_cond_uScm = mean(value),
-            thquan_cond_uScm = quantile(value, 0.75)) %>% 
-  filter(n > 3) 
 
 ## visualize stream cond in paneled plots ----
 
@@ -586,109 +474,4 @@ lt_cond_med <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
             title.fontface = 'bold')
 tmap_save(lt_cond_med, filename = file.path(dump_dir, 'median_longterm_conductivity_2010-2020.png'),
           height = 6, width =5, dpi = 300)
-
-
-
-# create scatterplot of in-lake deep/shallow and stream input (of those which inlet to lake) over time----
-lmp_summer_cond_deep <- lmp_summer_cond %>% 
-  filter((station == 200 |
-            station == 210 |
-            station == 220 |
-            station == 230)
-         & site_type == 'lake')
-
-lmp_summer_cond_shallow <- lmp_summer_cond %>% 
-  filter(station < 100 & site_type == 'lake')
-unique(lmp_summer_cond_shallow$station)
-
-lmp_summer_cond_inlet <- lmp_summer_cond_stream %>% 
-  filter(station > 250 & station <1000 & 
-           site_type == 'stream'&
-           status == 'ongoing' &
-           last_year == 2020 &
-           first_year <= 1994 &
-           !is.na(lat_dd) &
-           station != 680)#this one is quite a bit upstream
-unique(lmp_summer_cond_inlet$station)
-
-## join data sources ----
-lmp_agg_lake <- right_join(lmp_agg_lake, lmp_locs)
-head(lmp_agg_lake)
-agg_cond_stream <- right_join(agg_cond_stream, lmp_locs)
-head(agg_cond_stream)
-
-ws_cond <- full_join(lmp_agg_lake, agg_cond_stream) %>% 
-  mutate(data = case_when(site_type == 'stream' ~ 'stream',
-                          site_type == 'lake' & sub_site_type == 'cove' ~ 'shallow in-lake',
-                          site_type == 'lake' & sub_site_type == 'deep' ~ 'deep in-lake')) %>% 
-  mutate(data = factor(data, levels = c('stream', 'shallow in-lake', 'deep in-lake')))
-
-## plot mean per station ----
-ggplot(ws_cond, aes(x = as.numeric(year), y = mean_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ .) +
-  final_theme +
-  theme(legend.position =  'none',
-        strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
-  scale_color_colorblind() +
-  labs(x = NULL,
-       y = 'average annual conductivity per site per year (uS/cm)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_avecond.png'),
-       height = 6,
-       width = 9,
-       dpi = 300,
-       units ='in')
-
-ggplot(ws_cond, aes(x = as.numeric(year), y = med_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ .) +
-  final_theme() +
-  theme(legend.position =  'none',
-        strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
-  scale_color_colorblind() +
-  labs(x = NULL,
-       y = 'median annual conductivity per site per year (uS/cm)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_medcond.png'),
-       height = 6,
-       width = 9,
-       dpi = 300,
-       units ='in')
-
-ggplot(ws_cond, aes(x = as.numeric(year), y = mean_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ ., scales = 'free_y') +
-  final_theme +
-  theme(legend.position =  'none',
-        strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
-  scale_color_colorblind() +
-  labs(x = NULL,
-       y = 'average annual conductivity per site per year (uS/cm)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_avecond_diffscale.png'),
-       height = 6,
-       width = 9,
-       dpi = 300,
-       units ='in')
-
-ggplot(ws_cond, aes(x = as.numeric(year), y = med_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ ., scales = 'free_y') +
-  final_theme() +
-  theme(legend.position =  'none',
-        strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
-  scale_color_colorblind() +
-  labs(x = NULL,
-       y = 'median annual conductivity per site per year (uS/cm)')
-ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_medcond_diffscale.png'),
-       height = 6,
-       width = 9,
-       dpi = 300,
-       units ='in')
 

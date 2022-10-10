@@ -4,18 +4,16 @@ library(sf)
 library(tmap)
 library(tidyverse)
 library(readxl)
+library(ggspatial)
+library(ggsflabel)
+library(cowplot)
 
 #features dir
 feat_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
+dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/maps/'
 
 #read in station locations
-lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
-
-lmp_lake_names <- read_xls('https://github.com/Lake-Sunapee-Protective-Association/LMP/main/raw%20data%20files/station%20locations/Cove%20%20Deep%20+%20Buoy%20WQ%20Sample%20Point%20GPS%20Coordinates.xls')
-lmp_trib_names <- 
-
-lmp_shortlist <- lmp_locs %>% 
-  filter(last_year == 2020 & first_year < 1995)
+lmp_shortlist <- read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
 
 # bring in spatial layers ----
 lake <- read_sf(file.path(feat_dir, 'hydrography/LS_shore_WGS.shp'))
@@ -27,21 +25,52 @@ waterbodies <- read_sf(file.path(feat_dir, 'hydrography/waterbodies open water.s
 waterbodies <- st_transform(waterbodies, crs = 'epsg:4326')
 roads <- read_sf(file.path(feat_dir, 'roads/roads_sun_wshed.shp'))
 roads <- st_transform(roads, crs = 'epsg:4326')
+roads <- st_zm(roads,drop = T)
 
 lmp <- st_as_sf(lmp_shortlist, 
                 coords = c('lon_dd', 'lat_dd'),
-                crs = 'epsg:4326') %>% 
-  mutate(sub_site_type = case_when(site_type == 'stream' ~ 'tributary',
-                                   TRUE ~ sub_site_type))
+                crs = 'epsg:4326') 
 
-tm_shape(watershed) +
-  tm_polygons(col = 'white')+
-  tm_shape(streams) +
-  tm_lines(col = 'darkblue') +
-  tm_shape(waterbodies) +
-  tm_polygons(col = 'lightblue') +
-  tm_shape(roads) +
-  tm_lines(col = 'lightgrey', size = 'NO_LANES') +
-  tm_shape(lmp) +
-  tm_dots(shape = 'sub_site_type', col = 'sub_site_type', size = 1, labels = name) +
-  tm_layout(legend.outside = T)
+lmp_stream <- lmp %>% 
+  filter(sub_site_type == 'tributary')
+lmp_lake <- lmp %>% 
+  filter(site_type == 'lake')
+
+stream <- ggplot() +
+  geom_sf(watershed, mapping = aes(), fill = 'white') +
+  geom_sf(streams, mapping = aes(), color = 'dark blue') +
+  geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
+  geom_sf(roads, mapping = aes(), color = 'light grey') +
+  geom_sf(lmp_stream, mapping = aes(), size = 3) +
+  scale_color_viridis_d() +
+  theme_void() +
+  labs(x = NULL, y = NULL) +
+  geom_sf_label_repel(lmp_stream, mapping = aes(label = Name), size = 2) +
+  facet_grid(. ~ sub_site_type) +
+  theme(strip.text.x = element_text(size = 12, face = "bold"))
+    
+
+lake <- ggplot(lmp_lake) +
+  geom_sf(watershed, mapping = aes(), fill = 'white') +
+  geom_sf(streams, mapping = aes(), color = 'dark blue') +
+  geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
+  geom_sf(roads, mapping = aes(), color = 'light grey') +
+  geom_sf(mapping = aes(shape = sub_site_type, color = sub_site_type), size = 3) +
+  scale_color_manual(values = c('#e69f00', '#009e73')) +
+  scale_shape_manual(values = c(17, 15)) +
+  theme_void() +
+  labs(x = NULL, y = NULL) +
+  geom_sf_label_repel(lmp_lake, mapping = aes(label = Name), size = 3) +
+  facet_grid(. ~ sub_site_type) +
+  theme(strip.text.x = element_text(size = 12, face = "bold"),
+        legend.position = 'none')
+
+plot_grid(stream, lake,
+          rel_widths = c(1, 2))
+
+ggsave(file.path(dump_dir, 'labeled_locs_facet.jpg'),
+       height = 6,
+       width = 9,
+       dpi = 600,
+       units = 'in',
+       bg = 'white')
