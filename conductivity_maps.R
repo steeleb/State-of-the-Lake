@@ -1,6 +1,6 @@
 # code to visualize long term phosphorus in lake sunapee
 
-source(conductivity_summary.R)
+source('conductivity_summary.R')
 
 library(sf)
 library(tmap)
