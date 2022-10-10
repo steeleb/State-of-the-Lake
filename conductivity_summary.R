@@ -106,28 +106,6 @@ agg_cond_stream <- lmp_summer_cond_stream %>%
             thquan_cond_uScm = quantile(value, 0.75)) %>% 
   filter(n > 3) 
 
-# create scatterplot of in-lake deep/shallow and stream input (of those which inlet to lake) over time----
-lmp_summer_cond_deep <- lmp_summer_cond %>% 
-  filter((station == 200 |
-            station == 210 |
-            station == 220 |
-            station == 230)
-         & site_type == 'lake')
-
-lmp_summer_cond_shallow <- lmp_summer_cond %>% 
-  filter(station < 100 & site_type == 'lake')
-unique(lmp_summer_cond_shallow$station)
-
-lmp_summer_cond_inlet <- lmp_summer_cond_stream %>% 
-  filter(station > 250 & station <1000 & 
-           site_type == 'stream'&
-           status == 'ongoing' &
-           last_year == 2020 &
-           first_year <= 1994 &
-           !is.na(lat_dd) &
-           station != 680)#this one is quite a bit upstream
-unique(lmp_summer_cond_inlet$station)
-
 ## join data sources ----
 lmp_agg_lake <- right_join(lmp_agg_lake, lmp_locs)
 head(lmp_agg_lake)
