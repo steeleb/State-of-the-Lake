@@ -22,99 +22,38 @@ lmp_cond <- lmp %>%
 lmp_summer_cond = lmp_cond %>% 
   filter(month >=6 & month <=9)
 
-#filter for in-lake and longterm sites; epi and integrated only
-lmp_cond_lake <- lmp_summer_cond %>% 
-  filter(site_type == 'lake') %>% 
-  filter(station == 10 |
-           station == 20 |
-           station == 30 |
-           station == 60 |
-           station == 70 |
-           station == 80 |
-           station == 90 |
-           station == 110 |
-           station == 200 |
-           station == 210 |
-           station == 220 |
-           station == 230) %>% 
-  filter(layer == 'E' | layer == 'I')
+#grab only select locations
+lmp_summer_cond_select <- lmp_summer_cond %>% 
+  left_join(lmp_locs, .) 
 
-ggplot(lmp_cond_lake, aes(x = date, y = value)) +
-  geom_point() +
-  facet_grid(station ~.) +
-  theme_bw()
+#grab epi samples OR integrated at cove
+lmp_summer_cond_select <- lmp_summer_cond_select %>% 
+  filter(site_type == 'stream' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove')
 
-#aggregate to median, max, mean, 3rd quartile value
-lmp_agg_lake <- lmp_cond_lake %>% 
-  group_by(station, year) %>% 
+## aggregate and join by year/site ----
+lmp_cond_aggyearsite <- lmp_summer_cond_select %>% 
   filter(!is.na(value)) %>% 
-  summarize(med_cond_uScm = median(value),
-            max_cond_uScm = max(value),
-            mean_cond_uScm = mean(value),
-            thquan_cond_uScm = quantile(value, 0.75))
-
-lmp_agg_lake %>% 
-  mutate(loc = case_when(station < 200 ~ 'near-shore',
-                         TRUE ~ 'deep')) %>% 
-  ggplot(., aes(x = year, y = mean_cond_uScm, shape = loc)) +
-  geom_point(size = 2) +
-  theme_bw()
-
-## get station list and apply loc info ####
-stationlist <- data.frame(unique(lmp_cond_lake$station))
-colnames(stationlist) = 'station'
-
-stationlist <- left_join(stationlist, lmp_locs)
-
-# apply station info to 2 datasets
-lmp_agg_lake <- full_join(lmp_agg_lake, stationlist)
-
-
-# look at cond from streams ####
-lmp_summer_cond_stream <- lmp_summer_cond %>% 
-  filter(site_type == 'stream') %>% 
-  arrange(station)
-
-
-stream_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
-
-lmp_summer_cond_stream <- right_join(lmp_summer_cond_stream, stream_locs)
-
-unique(lmp_summer_cond_stream$station)
-
-ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
-  geom_point() +
-  facet_grid(station ~ .)
-
-#drop a few more incomplete streams
-lmp_summer_cond_stream <- lmp_summer_cond_stream %>% 
-  filter(station != 715 &
-           station != 1415)
-
-ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
-  geom_point() +
-  facet_grid(station ~ .)
-
-#aggregate and change units
-agg_cond_stream <- lmp_summer_cond_stream %>% 
-  group_by(station, year, lat_dd, lon_dd) %>% 
-  filter(!is.na(value)) %>% 
+  group_by(year, station, site_type, sub_site_type, lat_dd, lon_dd) %>% 
   summarize(n = n(),
             med_cond_uScm = median(value),
             max_cond_uScm = max(value),
             mean_cond_uScm = mean(value),
-            thquan_cond_uScm = quantile(value, 0.75)) %>% 
-  filter(n > 3) 
+            thquan_cond_uScm = quantile(value, 0.75)) 
 
-## join data sources ----
-lmp_agg_lake <- right_join(lmp_agg_lake, lmp_locs)
-head(lmp_agg_lake)
-agg_cond_stream <- right_join(agg_cond_stream, lmp_locs)
-head(agg_cond_stream)
+lmp_cond_aggyearsite <-lmp_cond_aggyearsite %>% 
+  mutate(sub_site_type = factor(sub_site_type, levels = c( 'tributary', 'cove','deep')))
 
-ws_cond <- full_join(lmp_agg_lake, agg_cond_stream) %>% 
-  mutate(data = case_when(site_type == 'stream' ~ 'tributary',
-                          site_type == 'lake' & sub_site_type == 'cove' ~ 'shallow in-lake',
-                          site_type == 'lake' & sub_site_type == 'deep' ~ 'deep in-lake')) %>% 
-  mutate(data = factor(data, levels = c('tributary', 'shallow in-lake', 'deep in-lake')))
+
+## aggregate and join by year ----
+lmp_cond_aggyear <- lmp_summer_cond_select %>% 
+  filter(!is.na(value)) %>% 
+  group_by(year, sub_site_type) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75)) 
+
+lmp_cond_aggyear <-lmp_cond_aggyear %>% 
+  mutate(sub_site_type = factor(sub_site_type, levels = c( 'tributary', 'cove','deep')))
 

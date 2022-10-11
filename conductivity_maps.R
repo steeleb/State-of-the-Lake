@@ -1,4 +1,4 @@
-# code to visualize long term phosphorus in lake sunapee
+# code to visualize long term conductivity in lake sunapee
 
 source('conductivity_summary.R')
 
