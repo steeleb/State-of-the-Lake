@@ -1,0 +1,54 @@
+#land cover analysis#
+
+#NLCD 2011 v. 2014
+
+nlcd11 <- read_csv('E:/GIS_data_general/US_data/project_data/Sunapee/land_cover/sun_ws_NLCD11.csv') %>% 
+  select(-Rowid_)
+
+nlcd11_water <- read_csv('E:/GIS_data_general/US_data/project_data/Sunapee/land_cover/suN_NLCD11.csv') %>% 
+  select(-Rowid_) %>% 
+  filter(VALUE == 11) %>% 
+  rename(LAKE_COUNT = COUNT)
+
+nlcd11_reclass <- full_join(nlcd11, nlcd11_water) %>% 
+  mutate(LAKE_COUNT = case_when(is.na(LAKE_COUNT) ~ as.numeric(0),
+                                TRUE ~ as.numeric(LAKE_COUNT)),
+         count_min_lake = COUNT - LAKE_COUNT) %>% 
+  mutate(reclass_name=case_when(VALUE == 11 ~ 'open water',
+                                VALUE == 21 | VALUE == 22 |VALUE == 23|VALUE == 24 ~ 'developed + transportation',
+                                VALUE == 31 ~ 'open',
+                                VALUE == 41 |VALUE == 42|VALUE == 43 ~ 'forest',
+                                VALUE == 52|VALUE == 71 ~'open',
+                                VALUE == 81 | VALUE == 82 ~ 'agriculture',
+                                VALUE == 90 | VALUE == 95 ~ 'wetland')) %>% 
+  group_by(reclass_name) %>% 
+  summarize(count = sum(count_min_lake))
+
+TOTAL_AREA <- sum(nlcd11_reclass$count)
+
+nlcd11_reclass <- nlcd11_reclass %>% 
+  mutate(percent = (count/TOTAL_AREA) * 100)
+
+
+#200m buffer
+nlcd_buff <- read_csv('E:/GIS_data_general/US_data/project_data/Sunapee/land_cover/sun_200buff_NLCD11.csv') %>% 
+  select(-Rowid_)
+
+nlcd_buff <- full_join(nlcd_buff, nlcd11_water) %>% 
+  mutate(LAKE_COUNT = case_when(is.na(LAKE_COUNT) ~ as.numeric(0),
+                                TRUE ~ as.numeric(LAKE_COUNT)),
+         count_min_lake = COUNT - LAKE_COUNT) %>% 
+  mutate(reclass_name=case_when(VALUE == 11 ~ 'open water',
+                                VALUE == 21 | VALUE == 22 |VALUE == 23|VALUE == 24 ~ 'developed + transportation',
+                                VALUE == 31 ~ 'open',
+                                VALUE == 41 |VALUE == 42|VALUE == 43 ~ 'forest',
+                                VALUE == 52|VALUE == 71 ~'open',
+                                VALUE == 81 | VALUE == 82 ~ 'agriculture',
+                                VALUE == 90 | VALUE == 95 ~ 'wetland')) %>% 
+  group_by(reclass_name) %>% 
+  summarize(count = sum(count_min_lake))
+
+TOTAL_AREA <- sum(nlcd_buff$count)
+
+nlcd_buff <- nlcd_buff %>% 
+  mutate(percent = (count/TOTAL_AREA) * 100)

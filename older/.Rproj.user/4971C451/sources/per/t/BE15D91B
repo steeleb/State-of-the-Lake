@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1528783091864.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "BE15D91B",
+    "lastKnownWriteTime" : 7310575247905743731,
+    "last_content_update" : 1528783091864,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "3DDE792",
+        "caption" : "tp_210",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=tp_210&cache_key=3DDE792",
+        "displayedObservations" : "109",
+        "environment" : "",
+        "object" : "tp_210",
+        "preview" : "0",
+        "totalObservations" : "109",
+        "variables" : "5"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

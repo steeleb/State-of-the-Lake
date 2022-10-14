@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1528787116174.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F0B5E00C",
+    "lastKnownWriteTime" : 7310575247905743731,
+    "last_content_update" : 1528787116174,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "991770B8",
+        "caption" : "tp_210_yrave",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=tp_210_yrave&cache_key=991770B8",
+        "displayedObservations" : 22,
+        "environment" : "",
+        "object" : "tp_210_yrave",
+        "preview" : 0,
+        "totalObservations" : 22,
+        "variables" : 2
+    },
+    "relative_order" : 8,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

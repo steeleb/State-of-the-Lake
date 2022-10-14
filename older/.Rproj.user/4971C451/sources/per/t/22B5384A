@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1528783007010.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "22B5384A",
+    "lastKnownWriteTime" : 7310575247905743731,
+    "last_content_update" : 1528783007010,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "1BAC6505",
+        "caption" : "tp_220",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=tp_220&cache_key=1BAC6505",
+        "displayedObservations" : 128,
+        "environment" : "",
+        "object" : "tp_220",
+        "preview" : 0,
+        "totalObservations" : 128,
+        "variables" : 5
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

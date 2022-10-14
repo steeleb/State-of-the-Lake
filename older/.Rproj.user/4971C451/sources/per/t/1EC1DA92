@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1528782570677.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "1EC1DA92",
+    "lastKnownWriteTime" : 7310575247905743731,
+    "last_content_update" : 1528782570677,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "50529E70",
+        "caption" : "lmp_tp",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=lmp_tp&cache_key=50529E70",
+        "displayedObservations" : 9585,
+        "environment" : "",
+        "object" : "lmp_tp",
+        "preview" : 0,
+        "totalObservations" : 9585,
+        "variables" : 5
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
