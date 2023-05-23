@@ -113,5 +113,3 @@ ggsave(filename = file.path(dump_dir, 'alldata_allsites_stream_tp_freey_lt400.pn
        units = 'in',
        dpi = 300)
 
-
-## compare stream and in-lake where available ----

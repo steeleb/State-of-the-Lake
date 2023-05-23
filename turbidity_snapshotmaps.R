@@ -34,20 +34,20 @@ lmp <- st_as_sf(lmp_locs,
                 coords = c('lon_dd', 'lat_dd'),
                 crs = 'epsg:4326') 
 
-# 2020 phosphorus ----
+# 2022 phosphorus ----
 lmp_turb_ys <- st_as_sf(lmp_turb_aggyearsite, 
                           coords = c('lon_dd', 'lat_dd'),
                           crs = 'epsg:4326') 
 
-lmp_stream_2020 <- lmp_turb_ys %>% 
-  filter(sub_site_type == 'tributary' & year == 2020)
-lmp_lake_2020 <- lmp_turb_ys %>% 
-  filter(site_type == 'lake' & year == 2020)
+lmp_stream_2022 <- lmp_turb_ys %>% 
+  filter(sub_site_type == 'tributary' & year == 2022)
+lmp_lake_2022 <- lmp_turb_ys %>% 
+  filter(site_type == 'lake' & year == 2022)
 
-lmp_stream_2020_e = lmp_stream_2020 %>% 
+lmp_stream_2022_e = lmp_stream_2022 %>% 
   filter(station == 1415 | station == 1420 | station == 830 | station == 835 | 
            station == 805 | station == 800 | station == 788  | station == 760)
-lmp_stream_2020_w = lmp_stream_2020 %>% 
+lmp_stream_2022_w = lmp_stream_2022 %>% 
   filter(station != 1415 & station != 1420 &  station != 830 & station != 835 & 
            station != 805 & station != 800 & station != 788  & station != 760)
 
@@ -56,7 +56,7 @@ stream <- ggplot() +
   geom_sf(streams, mapping = aes(), color = 'dark blue') +
   geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
   geom_sf(roads, mapping = aes(), color = 'light grey') +
-  geom_sf(lmp_stream_2020, mapping = aes(color = mean_turb_NTU), size = 3) +
+  geom_sf(lmp_stream_2022, mapping = aes(color = mean_turb_NTU), size = 3) +
   scale_color_viridis_c(limits = c(0,25)) +
   theme_void() +
   labs(x = NULL, y = NULL,
@@ -68,10 +68,10 @@ stream <- ggplot() +
   theme(legend.position = 'bottom', legend.title = element_text(size = 10)) +
   scale_x_continuous(limits = c(as.numeric(st_bbox(watershed)[1])-0.03, as.numeric(st_bbox(watershed)[3])+0.03))
 
-lmp_lake_2020_e = lmp_lake_2020 %>%
+lmp_lake_2022_e = lmp_lake_2022 %>%
   filter(station == 110 | station == 200 | station == 220 | station == 230 |
            station == 90)
-lmp_lake_2020_w = lmp_lake_2020 %>%
+lmp_lake_2022_w = lmp_lake_2022 %>%
   filter(station != 110 & station != 200 & station != 220 & station != 230 &
            station != 90)
 
@@ -80,13 +80,13 @@ lake <-ggplot() +
   geom_sf(streams, mapping = aes(), color = 'dark blue') +
   geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
   geom_sf(roads, mapping = aes(), color = 'light grey') +
-  geom_sf(lmp_lake_2020, mapping = aes(color = mean_turb_NTU), size = 3) +
+  geom_sf(lmp_lake_2022, mapping = aes(color = mean_turb_NTU), size = 3) +
   scale_color_viridis_c(limits = c(0,25)) +
   theme_void() +
   labs(x = NULL, y = NULL,
        color = 'average\nsummer\nturbidity\n(NTU)') +
-  geom_sf_label_repel(lmp_lake_2020_w, mapping = aes(label = Name), nudge_x = -1,nudge_y = -0.001, size = 3) +
-  geom_sf_label_repel(lmp_lake_2020_e, mapping = aes(label = Name), nudge_x = 1,nudge_y = 0.001,  size = 3) +
+  geom_sf_label_repel(lmp_lake_2022_w, mapping = aes(label = Name), nudge_x = -1,nudge_y = -0.001, size = 3) +
+  geom_sf_label_repel(lmp_lake_2022_e, mapping = aes(label = Name), nudge_x = 1,nudge_y = 0.001,  size = 3) +
   facet_grid(. ~ site_type) +
   theme(strip.text.x = element_text(size = 12, face = "bold"))+
   theme(legend.position = 'bottom', legend.title = element_text(size = 10)) +
@@ -94,7 +94,7 @@ lake <-ggplot() +
 
 plot_grid(stream, lake)
 
-ggsave(file.path(dump_dir, 'turb2020_map_labeled.jpg'),
+ggsave(file.path(dump_dir, 'turb2022_map_labeled.jpg'),
        height = 6,
        width = 9,
        dpi = 600,
@@ -102,10 +102,11 @@ ggsave(file.path(dump_dir, 'turb2020_map_labeled.jpg'),
        bg = 'white')
 
 
-# 2011-2020 phosphorus ----
+# 10yr turbidity ----
+startyear = 2013
 lmp_turb_10year <- lmp_turb %>% 
   right_join(lmp_locs) %>% 
-  filter(year >= 2011) %>% 
+  filter(year >= startyear) %>% 
   group_by(station, lon_dd, lat_dd, site_type, sub_site_type, Name) %>% 
   filter(!is.na(value)) %>% 
   summarize(mean_turb_NTU = mean(value)) %>% 
