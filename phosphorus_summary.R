@@ -3,7 +3,7 @@
 library(tidyverse)
 
 # read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/LSPALMP_1986-2020_v2021-03-29.csv')
+lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2022_v2023-01-22.csv')
 
 #read in station locations
 lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
@@ -13,7 +13,7 @@ lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lak
 unique(lmp$parameter)
 
 lmp_tp <- lmp %>% 
-  filter(parameter == 'TP_mgl') %>% 
+  filter(parameter == 'phosphorusTotal_mgl') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))
@@ -28,10 +28,12 @@ lmp_summer_tp_select <- lmp_summer_tp %>%
 
 #grab epi samples OR integrated at cove
 lmp_summer_tp_select <- lmp_summer_tp_select %>% 
-  filter(site_type == 'stream' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove')
+  filter(site_type == 'stream' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove') %>% 
+  filter(!is.na(value))
 
 ## aggregate and join by year/site ----
 lmp_tp_aggyearsite <- lmp_summer_tp_select %>% 
+  mutate(year = format(as.Date(date), '%Y')) %>% 
   group_by(year, station, site_type, sub_site_type, lat_dd, lon_dd) %>% 
   summarize(n = n(),
             med_tp_ugl = median(value)*1000,
