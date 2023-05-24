@@ -11,8 +11,12 @@ library(cowplot)
 feat_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
 dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/maps/'
 
-#read in station locations
-lmp_shortlist <- read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
+# add values to names for map ----
+lmp_cond_aggyearsite <- lmp_cond_aggyearsite %>% 
+  left_join(., lmp_locs) %>% 
+  mutate(mean_name = round(mean_cond_uScm, digits = 1)) %>% 
+  mutate(Name = paste0(Name, ' (', mean_name, ')'))
+
 
 # bring in spatial layers ----
 lake <- read_sf(file.path(feat_dir, 'hydrography/LS_shore_WGS.shp'))
@@ -26,13 +30,13 @@ roads <- read_sf(file.path(feat_dir, 'roads/roads_sun_wshed.shp'))
 roads <- st_transform(roads, crs = 'epsg:4326')
 roads <- st_zm(roads,drop = T)
 
-lmp <- st_as_sf(lmp_shortlist, 
+lmp <- st_as_sf(lmp_locs, 
                 coords = c('lon_dd', 'lat_dd'),
                 crs = 'epsg:4326') 
 
 # 2022 conductivity ----
 lmp_cond_2022 <- lmp_cond %>% 
-  right_join(lmp_shortlist) %>% 
+  right_join(lmp_locs) %>% 
   filter(year == 2022) %>% 
   group_by(station, lon_dd, lat_dd, site_type, sub_site_type, Name) %>% 
   filter(!is.na(value)) %>% 
@@ -75,7 +79,7 @@ ggplot() +
   # theme(strip.text.x = element_text(size = 12, face = "bold")) +
   theme(legend.position = 'bottom', legend.title = element_text(size = 10)) +
   scale_x_continuous(limits = c(as.numeric(st_bbox(watershed)[1])-0.04, as.numeric(st_bbox(watershed)[3])+0.04))
-ggsave(file.path(dump_dir, 'conductivity2022_tribs_map_labeled.jpg'),
+ggsave(file.path(dump_dir, 'conductivity_2022_tribs_map_labeled.jpg'),
        height = 6,
        width = 4,
        dpi = 600,
@@ -84,7 +88,7 @@ ggsave(file.path(dump_dir, 'conductivity2022_tribs_map_labeled.jpg'),
 
 # 2013-2022 conductivity ----
 lmp_cond_10year <- lmp_cond %>% 
-  right_join(lmp_shortlist) %>% 
+  right_join(lmp_locs) %>% 
   filter(year >= 2013) %>% 
   group_by(station, lon_dd, lat_dd, site_type, sub_site_type, Name) %>% 
   filter(!is.na(value)) %>% 

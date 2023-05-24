@@ -22,6 +22,103 @@ final_theme=theme_bw() +
         axis.title=element_text(size=14,face="bold"),
         plot.title=element_text(size=16, face='bold', hjust=0.5)) #save as a grom
 
+# filter and clean up conductivity ####
+#filter for conductivity
+unique(lmp$parameter)
+
+lmp_cond <- lmp %>% 
+  filter(parameter == 'specificConductance_uScm') %>% 
+  mutate(date = as.Date(date)) %>% 
+  mutate(year = format(date, '%Y')) %>% 
+  mutate(month = as.numeric(format(date, '%m')))
+
+#filter jun - sept
+lmp_summer_cond = lmp_cond %>% 
+  filter(month >=6 & month <=9)
+
+#filter for in-lake and longterm sites; epi and integrated only
+lmp_cond_lake <- lmp_summer_cond %>% 
+  filter(site_type == 'lake') %>% 
+  filter(station == 10 |
+           station == 20 |
+           station == 30 |
+           station == 60 |
+           station == 70 |
+           station == 80 |
+           station == 90 |
+           station == 110 |
+           station == 200 |
+           station == 210 |
+           station == 220 |
+           station == 230) %>% 
+  filter(layer == 'E' | layer == 'I')
+
+ggplot(lmp_cond_lake, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~.) +
+  theme_bw()
+
+#aggregate to median, max, mean, 3rd quartile value
+lmp_agg_lake <- lmp_cond_lake %>% 
+  group_by(station, year) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75))
+
+## get station list and apply loc info ####
+stationlist <- data.frame(unique(lmp_cond_lake$station))
+colnames(stationlist) = 'station'
+
+stationlist <- left_join(stationlist, lmp_locs)
+
+# apply station info to 2 datasets
+lmp_agg_lake <- full_join(lmp_agg_lake, stationlist)
+
+# look at turb from streams ####
+lmp_summer_cond_stream <- lmp_summer_cond %>% 
+  filter(site_type == 'stream') %>% 
+  arrange(station)
+
+
+stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv')
+stream_locs <- stream_locs %>% 
+  filter(site_type == 'stream' &
+           status == 'ongoing' &
+           last_year == 2022 &
+           first_year <= 1994 &
+           !is.na(lat_dd))
+
+lmp_summer_cond_stream <- right_join(lmp_summer_cond_stream, stream_locs)
+
+unique(lmp_summer_cond_stream$station)
+
+ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~ .)
+
+#drop a few more incomplete streams
+lmp_summer_cond_stream <- lmp_summer_cond_stream %>% 
+  filter(station != 715 &
+           station != 1415 &
+           station != 1115 &
+           station != 1420)
+
+ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~ .)
+
+#aggregate and change units
+agg_cond_stream <- lmp_summer_cond_stream %>% 
+  group_by(station, year, lat_dd, lon_dd) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75)) %>% 
+  filter(n > 3) 
+
 ## load the spatial layers ####
 
 #sunapee shoreline
@@ -35,7 +132,7 @@ sun_stream_wgs <- st_transform(sun_stream, crs = 'EPSG:4326')
 sun_ws_water <- st_read(file.path(gis_dir, 'hydrography/waterbodies open water.shp'))
 sun_ws_water_wgs <- st_transform(sun_ws_water, crs = 'EPSG:4326')
 
-#table to sf for med and max cond
+#table to sf for med and max turb
 aggcond <- st_as_sf(lmp_agg_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
 
 #define bounding box fo vis

@@ -1,4 +1,4 @@
-
+# conductivity timeseries maps ---
 source('conductivity_summary.R')
 
 library(ggthemes)
@@ -7,10 +7,12 @@ library(ggthemes)
 dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/summer_cond/'
 
 ## plot mean per station ----
-ggplot(ws_cond, aes(x = as.numeric(year), y = mean_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ .) +
+lmp_cond_aggyearsite
+
+ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = mean_cond_uScm)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = sub_site_type)) +
+  geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
+  facet_grid(sub_site_type ~ .) +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
@@ -24,10 +26,10 @@ ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_avecond.png'),
        dpi = 300,
        units ='in')
 
-ggplot(ws_cond, aes(x = as.numeric(year), y = med_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ .) +
+ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = med_cond_uScm)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = sub_site_type)) +
+  geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
+  facet_grid(sub_site_type ~ .) +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
@@ -41,10 +43,10 @@ ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_medcond.png'),
        dpi = 300,
        units ='in')
 
-ggplot(ws_cond, aes(x = as.numeric(year), y = mean_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ ., scales = 'free_y') +
+ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = mean_cond_uScm)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = sub_site_type)) +
+  geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
+  facet_grid(sub_site_type ~ .,scales = 'free_y') +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
@@ -58,10 +60,10 @@ ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_avecond_diffscale.
        dpi = 300,
        units ='in')
 
-ggplot(ws_cond, aes(x = as.numeric(year), y = med_cond_uScm)) +
-  geom_smooth(color = 'dark grey', se = F, aes(color = data)) +
-  geom_point(aes(color = data, shape = data), size = 2.5) +
-  facet_grid(data ~ ., scales = 'free_y') +
+ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = med_cond_uScm)) +
+  geom_smooth(color = 'dark grey', se = F, aes(color = sub_site_type)) +
+  geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
+  facet_grid(sub_site_type ~ .,scales = 'free_y') +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
