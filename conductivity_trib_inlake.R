@@ -40,7 +40,7 @@ HC_med <- HC %>%
   pivot_wider(id_cols = year,
               values_from = med_cond_uScm,
               names_from = station) %>% 
-  select(year, `110`, `830`, `835`) %>% 
+  dplyr::select(year, `110`, `830`, `835`) %>% 
   rename(HC = `110`, 
          HerrickCoveSouth = `830`, 
          HerrickCoveNorth = `835`) %>% 
@@ -89,7 +89,7 @@ GM_med <- GM %>%
   pivot_wider(id_cols = year,
               values_from = med_cond_uScm,
               names_from = station) %>% 
-  select(year, `10`, `505`, `510`) %>% 
+  dplyr::select(year, `10`, `505`, `510`) %>% 
   rename(GM = `10`, 
          OtterPondBrook = `505`, 
          MuzzeyBrook = `510`) %>% 
@@ -143,7 +143,7 @@ JC_med <- JC %>%
   pivot_wider(id_cols = year,
               values_from = med_cond_uScm,
               names_from = station) %>% 
-  select(year, `20`, `540`) %>% 
+  dplyr::select(year, `20`, `540`) %>% 
   rename(JCL = `20`, 
          JobsCreek = `540`) 
 
@@ -164,52 +164,56 @@ ggsave(file.path(dump_dir, 'cond_jobs_stream_cove.jpg'),
 
 
 # Chandler's cove ----
-CC <- lmp_cond_aggyearsite %>% 
-  filter(station == 70 | station == 670 | station == 680)
 
-# CC_mean <- CC %>% 
+#no station 70?
+
+
+# CC <- lmp_cond_aggyearsite %>% 
+#   filter(station == 70 | station == 670 | station == 680)
+# 
+# # CC_mean <- CC %>% 
+# #   pivot_wider(id_cols = year,
+# #               values_from = mean_cond_uScm,
+# #               names_from = station) %>% 
+# #   select(year, `70`, `670`, `680`) %>% 
+# #   rename(CC = `70`,
+# #          CB = `670`, 
+# #          BB = `680`) %>% 
+# #   pivot_longer(names_to = 'trib', 
+# #                values_to = 'cond_uScm', 
+# #                cols = c(CB, BB))
+# # 
+# # ggplot(CC_mean, aes(x = CC)) +
+# #   geom_point(aes(y = cond_uScm, color = trib)) +
+# #   scale_color_colorblind() +
+# #   theme_bw() +
+# #   labs(x = 'average in-lake total phosphorus (µg/L)',
+# #        y = 'average tributary total phosphorus (µg/L)')
+# 
+# CC_med<- CC %>% 
 #   pivot_wider(id_cols = year,
-#               values_from = mean_cond_uScm,
+#               values_from = med_cond_uScm,
 #               names_from = station) %>% 
-#   select(year, `70`, `670`, `680`) %>% 
+#   dplyr::select(year, `70`, `670`, `680`) %>% 
 #   rename(CC = `70`,
-#          CB = `670`, 
-#          BB = `680`) %>% 
+#          ChandlerBrook = `670`, 
+#          BeckBrook = `680`) %>% 
 #   pivot_longer(names_to = 'trib', 
 #                values_to = 'cond_uScm', 
-#                cols = c(CB, BB))
+#                cols = c(ChandlerBrook, BeckBrook))
 # 
-# ggplot(CC_mean, aes(x = CC)) +
+# ggplot(CC_med, aes(x = CC)) +
 #   geom_point(aes(y = cond_uScm, color = trib)) +
-#   scale_color_colorblind() +
-#   theme_bw() +
-#   labs(x = 'average in-lake total phosphorus (µg/L)',
-#        y = 'average tributary total phosphorus (µg/L)')
-
-CC_med<- CC %>% 
-  pivot_wider(id_cols = year,
-              values_from = med_cond_uScm,
-              names_from = station) %>% 
-  select(year, `70`, `670`, `680`) %>% 
-  rename(CC = `70`,
-         ChandlerBrook = `670`, 
-         BeckBrook = `680`) %>% 
-  pivot_longer(names_to = 'trib', 
-               values_to = 'cond_uScm', 
-               cols = c(ChandlerBrook, BeckBrook))
-
-ggplot(CC_med, aes(x = CC)) +
-  geom_point(aes(y = cond_uScm, color = trib)) +
-  scale_color_colorblind(name = 'tributary') +
-  labs(title = 'Conductivity: Chandler Cove', 
-       x = 'median in-lake conductivity (uS/cm)',
-       y = 'median tributary conductivity (uS/cm)') +
-  geom_smooth(method = 'lm', se = F, aes(x = CC, y = cond_uScm, color = trib), lty = 3) +
-  final_theme +
-  theme(legend.position = 'bottom')
-ggsave(file.path(dump_dir, 'medcond_chandler_stream_cove.jpg'), 
-       height = 5, width = 6, units = 'in',
-       dpi = 600)
+#   scale_color_colorblind(name = 'tributary') +
+#   labs(title = 'Conductivity: Chandler Cove', 
+#        x = 'median in-lake conductivity (uS/cm)',
+#        y = 'median tributary conductivity (uS/cm)') +
+#   geom_smooth(method = 'lm', se = F, aes(x = CC, y = cond_uScm, color = trib), lty = 3) +
+#   final_theme +
+#   theme(legend.position = 'bottom')
+# ggsave(file.path(dump_dir, 'medcond_chandler_stream_cove.jpg'), 
+#        height = 5, width = 6, units = 'in',
+#        dpi = 600)
 
   
 
