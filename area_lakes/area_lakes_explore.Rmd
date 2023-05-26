@@ -29,6 +29,8 @@ sunapee_2022$LAKE = 'LAKE SUNAPEE'
 
 #drop a few columns
 sunapee_2022_subset <- sunapee_2022 %>% 
+  filter(gen_flag == '', 
+         flag == 'BDL' | flag == '') %>% 
   select(-c(flag, gen_flag, org_sampid, org_id))
 
 #and fix the site type column
@@ -122,7 +124,8 @@ ggsave(file.path(dump_dir, 'TP_2022_arealakes_sundeep.jpg'),
 ```{r}
 comp_data %>% 
   filter(parameter == 'specificConductance_uScm', 
-         layer == 'E' | layer == '' | layer == 'I') %>% 
+         layer == 'E' | layer == '' | layer == 'I',
+         depth_m < 7 | is.na(depth_m)) %>% 
   ggplot(., aes(x = as.Date(date), y = value, color = LAKE)) +
   geom_point() +
   facet_grid(site_type ~ ., scales = 'free_y') +
@@ -145,7 +148,8 @@ ggsave(file.path(dump_dir, 'cond_2022_arealakes_sundeep.jpg'),
 ```{r}
 comp_data %>% 
   filter(parameter == 'turbidity_NTU', 
-         layer == 'E' | layer == '' | layer == 'I') %>% 
+         layer == 'E' | layer == '' | layer == 'I',
+         depth_m < 7 | is.na(depth_m)) %>% 
   ggplot(., aes(x = as.Date(date), y = value, color = LAKE)) +
   geom_point() +
   facet_grid(site_type ~ ., scales = 'free_y') +
