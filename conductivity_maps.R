@@ -76,17 +76,16 @@ stationlist <- left_join(stationlist, lmp_locs)
 # apply station info to 2 datasets
 lmp_agg_lake <- full_join(lmp_agg_lake, stationlist)
 
-# look at turb from streams ####
+# look at conductivity from streams ####
 lmp_summer_cond_stream <- lmp_summer_cond %>% 
-  filter(site_type == 'stream') %>% 
+  filter(site_type == 'tributary') %>% 
   arrange(station)
 
 
 stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv')
 stream_locs <- stream_locs %>% 
-  filter(site_type == 'stream' &
+  filter(site_type == 'tributary' &
            status == 'ongoing' &
-           last_year == 2022 &
            first_year <= 1994 &
            !is.na(lat_dd))
 
@@ -151,7 +150,7 @@ bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
 ## visualize in paneled plots ####
 startyear = 1995
-endyear = 2022
+endyear = 2023
 paneled_meancond = tm_shape(sunapee_shore, bbox = bbox_sun_new) + tm_borders() +tm_fill() +
   tm_shape(subset(aggcond, subset = year >=startyear)) +
   tm_bubbles(col = 'mean_cond_uScm',
@@ -550,7 +549,7 @@ tmap_save(paneled_medcond_stream_lake,
 
 
 # single-panel 10-year average ----
-startyear = 2013
+startyear = 2014
 lmp_cond_lake <- left_join(lmp_cond_lake, lmp_locs)
 cond <- full_join(lmp_cond_lake, lmp_summer_cond_stream) %>% 
   filter(year >= startyear) 
@@ -565,7 +564,7 @@ cond_summary <- cond %>%
   filter(!is.na(lat_dd)) 
 
 cond_summary_stream <- cond_summary %>% 
-  filter(site_type == 'stream')
+  filter(site_type == 'tributary')
 cond_summary_lake <- cond_summary %>% 
   filter(site_type == 'lake')
 cond_summary_stream <- st_as_sf(cond_summary_stream, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
@@ -641,4 +640,35 @@ tmap_save(lt_cond_med,
                                       endyear,
                                       '.png')),
           height = 6, width =5, dpi = 300)
+
+
+tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'black') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(cond_summary_stream) +
+  tm_symbols(col = 'mean_cond_uScm',
+             palette = stream_pal,
+             shape = 21,
+             title.col = 'average summer\nconductivity (stream)\n(uS/cm)',
+             border.col = 'black') +
+  tm_layout(legend.outside = F, title.position = c('center', 'top'),
+            legend.title.fontface = 'bold',
+            legend.title.size = 0.9,
+            legend.text.size = 0.9,
+            title = paste0('Average Summer\nConductivity\n(Jun-Sept,\n',
+                           startyear,
+                           '-',
+                           endyear,
+                           ')\n '),
+            title.fontface = 'bold')
+tmap_save(lt_cond_ave, 
+          filename = file.path(dump_dir, 
+                               paste0('average_longterm_conductivity_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
+          height = 6, width =5, dpi = 300)
+
 
