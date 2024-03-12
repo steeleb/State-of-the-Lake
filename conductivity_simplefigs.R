@@ -16,9 +16,10 @@ ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = mean_cond_uScm)) +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
+        strip.text = element_text(face = 'bold'),
+        axis.title = element_text(size = 12, face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = 'year',
        y = 'average annual conductivity per site per year (uS/cm)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_avecond.png'),
        height = 6,
@@ -33,9 +34,10 @@ ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = med_cond_uScm)) +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
+        strip.text = element_text(face = 'bold'),
+        axis.title = element_text(size = 12, face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = 'year',
        y = 'median annual conductivity per site per year (uS/cm)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_medcond.png'),
        height = 6,
@@ -50,9 +52,10 @@ ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = mean_cond_uScm)) +
   theme_bw() +
   theme(legend.position =  'none',
         strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
+        strip.text = element_text(face = 'bold'),
+        axis.title = element_text(size = 12, face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = 'year',
        y = 'average annual conductivity per site per year (uS/cm)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_avecond_diffscale.png'),
        height = 6,
@@ -65,11 +68,12 @@ ggplot(lmp_cond_aggyearsite, aes(x = as.numeric(year), y = med_cond_uScm)) +
   geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
   facet_grid(sub_site_type ~ .,scales = 'free_y') +
   theme_bw() +
-  theme(legend.position =  'none',
+  theme(legend.position =  'none', 
         strip.background =element_rect(fill="white"),
-        strip.text = element_text(face = 'bold')) +
+        strip.text = element_text(face = 'bold'),
+        axis.title = element_text(size = 12, face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = 'year',
        y = 'median annual conductivity per site per year (uS/cm)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_stream_LT_medcond_diffscale.png'),
        height = 6,

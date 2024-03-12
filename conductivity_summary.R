@@ -6,7 +6,8 @@ library(tidyverse)
 lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2023_v2024-01-20.csv')
 
 #read in station locations
-lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
+lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv') %>% 
+  mutate(site_type = if_else(site_type == "stream", "tributary", site_type))
 
 # filter and clean up cond for inlake cond ####
 #filter for cond
@@ -28,7 +29,9 @@ lmp_summer_cond_select <- lmp_summer_cond %>%
 
 #grab epi samples OR integrated at cove
 lmp_summer_cond_select <- lmp_summer_cond_select %>% 
-  filter(site_type == 'stream' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove')
+  filter(site_type == 'tributary' | 
+           (site_type == 'lake' & layer == 'E') | 
+           sub_site_type == 'cove')
 
 ## aggregate and join by year/site ----
 lmp_cond_aggyearsite <- lmp_summer_cond_select %>% 
