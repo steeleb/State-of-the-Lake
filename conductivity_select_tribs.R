@@ -30,12 +30,14 @@ lmp_summer_cond = lmp_cond %>%
 lmp_summer_cond_select <- lmp_summer_cond %>% 
   left_join(lmp_locs, .) 
 
-#grab only cove data
-lmp_summer_cond_cove <- lmp_summer_cond_select %>% 
-  filter(sub_site_type == 'cove')
+#grab only trib data
+select_loc <- c(510, 830, 835, 1415)
+lmp_summer_cond_trib <- lmp_summer_cond_select %>% 
+  filter(sub_site_type == 'tributary') %>% 
+  filter(station %in% select_loc)
 
 # aggregate and join by year/site ----
-lmp_cond_aggyearsite_cove <- lmp_summer_cond_cove %>% 
+lmp_cond_aggyearsite_trib <- lmp_summer_cond_trib %>% 
   filter(!is.na(value)) %>% 
   group_by(year, station, site_type, sub_site_type, lat_dd, lon_dd) %>% 
   summarize(n = n(),
@@ -47,7 +49,7 @@ lmp_cond_aggyearsite_cove <- lmp_summer_cond_cove %>%
 
 
 ## facet conductivity per site ----
-ggplot(lmp_cond_aggyearsite_cove, aes(x = year, y = med_cond_uScm)) +
+ggplot(lmp_cond_aggyearsite_trib, aes(x = year, y = mean_cond_uScm)) +
   geom_smooth(color = 'dark grey', se = F) +
   geom_point() +
   facet_grid(station ~ .) +
@@ -55,7 +57,7 @@ ggplot(lmp_cond_aggyearsite_cove, aes(x = year, y = med_cond_uScm)) +
        x = 'year') +
   theme_bw() +
   theme(axis.title = element_text(size = 12,face = "bold"))
-ggsave(filename = file.path(dump_dir, 'coves_annual_mean_condiuctivity.png'),
+ggsave(filename = file.path(dump_dir, 'hightribs_LT_avecond.png'),
        height = 9,
        width = 6,
        dpi = 300,
