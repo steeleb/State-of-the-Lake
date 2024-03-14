@@ -2,16 +2,7 @@
 
 library(tidyverse)
 
-# read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2022_v2023-01-22.csv')
-
-#read in station locations
-lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
-
 # filter and clean up TP for inlake TP ####
-#filter for TP
-unique(lmp$parameter)
-
 lmp_tp <- lmp %>% 
   filter(parameter == 'phosphorusTotal_mgl') %>% 
   mutate(date = as.Date(date)) %>% 
@@ -28,7 +19,7 @@ lmp_summer_tp_select <- lmp_summer_tp %>%
 
 #grab epi samples OR integrated at cove
 lmp_summer_tp_select <- lmp_summer_tp_select %>% 
-  filter(site_type == 'stream' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove') %>% 
+  filter(site_type == 'tributary' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove') %>% 
   filter(!is.na(value))
 
 ## aggregate and join by year/site ----

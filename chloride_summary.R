@@ -2,17 +2,7 @@
 
 library(tidyverse)
 
-# read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2023_v2024-01-20.csv')
-
-#read in station locations
-lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv') %>% 
-  mutate(site_type = if_else(site_type == "stream", "tributary", site_type))
-
 # filter and clean up cl for inlake cl ####
-#filter for cl
-unique(lmp$parameter)
-
 lmp_cl <- lmp %>% 
   filter(parameter == 'chloride_mgl') %>% 
   mutate(date = as.Date(date)) %>% 

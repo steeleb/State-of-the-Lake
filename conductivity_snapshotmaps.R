@@ -9,10 +9,6 @@ library(ggsflabel)
 library(ggspatial)
 library(cowplot)
 
-#features dir
-feat_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
-dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/maps/'
-
 # add values to names for map ----
 lmp_cond_aggyearsite <- lmp_cond_aggyearsite %>% 
   left_join(., lmp_locs) %>% 

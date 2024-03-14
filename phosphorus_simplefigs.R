@@ -19,13 +19,14 @@ ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = mean_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveTPpersite.png'),
        height = 5,
        width = 7,
        dpi = 300,
        units ='in')
+
 ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = mean_tp_ugl)) +
   geom_abline(slope = 0, intercept = 5, lty = 2, color = 'black') +
   geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
@@ -35,7 +36,7 @@ ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = mean_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveTPpersite_noloess.png'),
        height = 5,
@@ -54,7 +55,7 @@ ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = med_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medTPpersite.png'),
        height = 6,
@@ -70,7 +71,7 @@ ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = med_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medTPpersite_noloess.png'),
        height = 6,
@@ -89,7 +90,7 @@ ggplot(lmp_tp_aggyear, aes(x = as.numeric(year), y = mean_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveTPperyear.png'),
        height = 5,
@@ -105,7 +106,7 @@ ggplot(lmp_tp_aggyear, aes(x = as.numeric(year), y = mean_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveTPperyear_noloess.png'),
        height = 5,
@@ -123,7 +124,7 @@ ggplot(lmp_tp_aggyear, aes(x = as.numeric(year), y = med_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medTPperyear.png'),
        height = 5,
@@ -139,7 +140,7 @@ ggplot(lmp_tp_aggyear, aes(x = as.numeric(year), y = med_tp_ugl)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual total phosphorus per site per year (ug/L)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medTPperyear_noloess.png'),
        height = 5,

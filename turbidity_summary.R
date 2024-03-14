@@ -2,19 +2,10 @@
 
 library(tidyverse)
 
-# read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2022_v2023-01-22.csv')
-
-#read in station locations
-lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
-
-
 # filter and clean up turbidity for inlake turb ####
-#filter for turb
-unique(lmp$parameter)
-
 lmp_turb <- lmp %>% 
   filter(parameter == 'turbidity_NTU') %>% 
+  filter(!is.na(value)) %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))
@@ -24,7 +15,7 @@ lmp_summer_turb = lmp_turb %>%
   filter(month >=6 & month <=9)
 
 lmp_summer_turb_select <- lmp_summer_turb %>% 
-  full_join(lmp_locs, .) 
+  right_join(lmp_locs, .) 
 
 ## aggregate and join by year/site ----
 lmp_turb_aggyearsite <- lmp_summer_turb_select %>% 

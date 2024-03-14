@@ -1,0 +1,109 @@
+---
+title: "Update figures!"
+author: "B. Steele"
+date: "2024-03-14"
+output: html_document
+---
+
+This script updates figures created in this repository using the most recent
+data published via the LMP. 
+
+```{r setup}
+# list packages used in the scripts
+packages <- c("tidyverse",
+              "ggthemes",
+              "gghighlight",
+              "sf",
+              "tmap",
+              "raster",
+              "gifski", 
+              "cowplot",
+              "devtools",
+              "readxl",
+              "httr")
+
+# function to check for install packages
+check_install_packages <- function(package) {
+  if (package %in% rownames(installed.packages()) == FALSE) {
+    install.packages(package)
+  }
+}
+
+# install all packages!
+lapply(packages, check_install_packages)
+
+# the ggsflabel package contains geom_sf_repel to make pretty labels
+devtools::install_github("yutannihilation/ggsflabel")
+
+library(tidyverse)
+library(readxl)
+library(httr)
+```
+
+
+# Point to the most recent data
+
+These are all publically available data. When updating, you'll need to update the version.
+
+```{r}
+# read in LMP record
+lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2023_v2024-01-20.csv')
+
+lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv')
+
+xls_names_url <- 'https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/raw%20data%20files/station%20locations/Cove%20%20Deep%20+%20Buoy%20WQ%20Sample%20Point%20GPS%20Coordinates.xls'
+GET(xls_names_url, write_disk(tf <- tempfile(fileext = ".xls")))
+lmp_lake_names <- read_xls(tf,
+                           skip = 3) %>% 
+  rename(station = WAYPOINT) %>% 
+  select(station, Name) %>% 
+  filter(station != 'Buoy' & station != '100.09999999999999') %>% 
+  mutate(station = as.numeric(station))
+unlink(tf)
+
+xls_tribs_url <- "https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/raw%20data%20files/station%20locations/tributary_pts_alt.xls"
+GET(xls_tribs_url, write_disk(tf <- tempfile(fileext = ".xls")))
+lmp_trib_names <- read_xls(tf) %>% 
+  rename(station = stream_no,
+         Name = stream_name) %>% 
+  select(station, Name)
+unlink(tf)
+
+names <- full_join(lmp_lake_names, lmp_trib_names)
+
+lmp_shortlist <- lmp_locs %>% 
+  filter(first_year < 1995) %>% 
+  left_join(., names) 
+
+lmp_shortlist <- lmp_shortlist %>% 
+  filter(!is.na(Name)) %>% 
+  mutate(Name = paste0(station, ' - ', Name))%>% 
+  mutate(sub_site_type = case_when(site_type == 'tributary' ~ 'tributary',
+                                   TRUE ~ sub_site_type))
+
+```
+
+# Point to the output directory and the GIS folder
+
+```{r}
+# where you want your figures to get saved (this directory must exist!)
+dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/'
+
+#  where the GIS files are stored
+feat_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
+```
+
+# Run the summary files
+
+These scripts create annual summaries for each of the parameters. Since data handling may be different across parameters, we run these individually.
+
+```{r}
+summary_scripts = c("chla_summary.R", 
+                    "chloride_summary.R",
+                    "conductivity_summary.R",
+                    "phosphorus_summary.R",
+                    "turbidity_summary.R")
+
+map(summary_scripts, source)
+```
+
