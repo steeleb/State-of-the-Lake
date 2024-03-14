@@ -15,7 +15,8 @@ lmp_summer_turb = lmp_turb %>%
   filter(month >=6 & month <=9)
 
 lmp_summer_turb_select <- lmp_summer_turb %>% 
-  right_join(lmp_locs, .) 
+  right_join(lmp_locs, .) %>% 
+  filter(station %in% lmp_shortlist$station)
 
 ## aggregate and join by year/site ----
 lmp_turb_aggyearsite <- lmp_summer_turb_select %>% 

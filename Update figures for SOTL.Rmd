@@ -49,7 +49,10 @@ These are all publically available data. When updating, you'll need to update th
 # read in LMP record
 lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/LSPALMP_1986-2023_v2024-01-20.csv')
 
-lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv')
+lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv') %>% 
+  mutate(sub_site_type = case_when(site_type == 'tributary' ~ 'tributary',
+                                   TRUE ~ sub_site_type))
+
 
 xls_names_url <- 'https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/raw%20data%20files/station%20locations/Cove%20%20Deep%20+%20Buoy%20WQ%20Sample%20Point%20GPS%20Coordinates.xls'
 GET(xls_names_url, write_disk(tf <- tempfile(fileext = ".xls")))
@@ -72,14 +75,12 @@ unlink(tf)
 names <- full_join(lmp_lake_names, lmp_trib_names)
 
 lmp_shortlist <- lmp_locs %>% 
-  filter(first_year < 1995) %>% 
+  filter(first_year < 1995 & status == "ongoing") %>% 
   left_join(., names) 
 
 lmp_shortlist <- lmp_shortlist %>% 
   filter(!is.na(Name)) %>% 
-  mutate(Name = paste0(station, ' - ', Name))%>% 
-  mutate(sub_site_type = case_when(site_type == 'tributary' ~ 'tributary',
-                                   TRUE ~ sub_site_type))
+  mutate(Name = paste0(station, ' - ', Name)) 
 
 ```
 
@@ -87,7 +88,7 @@ lmp_shortlist <- lmp_shortlist %>%
 
 ```{r}
 # where you want your figures to get saved (this directory must exist!)
-dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/'
+gen_dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/'
 
 #  where the GIS files are stored
 feat_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
@@ -105,5 +106,28 @@ summary_scripts = c("chla_summary.R",
                     "turbidity_summary.R")
 
 map(summary_scripts, source)
+```
+
+
+```{r}
+# name the range for the 10-year plots (2014 for 2014-2023, so forth)
+start_10_year = 2014
+end_10_year = 2023
+```
+
+Figs scripts that have been adjusted to use this mechanism for update
+
+```{r}
+source("phosphorus_simplefigs.R")
+source("turbidity_simplefigs.R")
+```
+
+
+Maps scripts that have been adjusted to use this mechanism for update
+
+```{r}
+source("phosphorus_snapshotmaps.R")
+source("phosphorus_maps.R")
+source("turbidity_snapshotmaps.R")
 ```
 

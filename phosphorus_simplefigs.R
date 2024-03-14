@@ -1,11 +1,9 @@
 # code to visualize long term phosphorus in lake sunapee - just timeseries plots
 
-source('phosphorus_summary.R')
-
 library(ggthemes)
 
 #point to dump directory
-dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/summer_tp/'
+dump_dir <- file.path(gen_dump_dir, 'summer_tp')
 
 
 ## plot mean and median -- site-years ----
