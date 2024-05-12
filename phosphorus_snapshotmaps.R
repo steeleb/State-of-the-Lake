@@ -130,7 +130,7 @@ stream_10y <- ggplot() +
   geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
   geom_sf(roads, mapping = aes(), color = 'light grey') +
   geom_sf(lmp_stream_10year, mapping = aes(color = mean_tp_ugl), size = 3) +
-  scale_color_viridis_c(limits = c(0,35)) +
+  scale_color_viridis_c(limits = c(0,max(lmp_stream_10year$mean_tp_ugl))) +
   theme_void() +
   labs(x = NULL, y = NULL,
        color = 'average\nsummer tributary\ntotal phosphorus\n(µg/L)') +
@@ -152,7 +152,7 @@ lake_10y <-ggplot() +
   geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
   geom_sf(roads, mapping = aes(), color = 'light grey') +
   geom_sf(lmp_lake_10year, mapping = aes(color = mean_tp_ugl), size = 3) +
-  scale_color_viridis_c(limits = c(0, 25)) +
+  scale_color_viridis_c(limits = c(0,max(lmp_lake_10year$mean_tp_ugl))) +
   theme_void() +
   labs(x = NULL, y = NULL,
        color = 'average\nsummer in-lake\ntotal phosphorus\n(µg/L)') +
@@ -165,7 +165,7 @@ lake_10y <-ggplot() +
 
 plot_grid(stream_10y, lake_10y)
 
-ggsave(file.path(dump_dir, 'tp10year_map_labeled.jpg'),
+ggsave(file.path(dump_dir, 'tp10year_map_labeled_v2023.jpg'),
        height = 6,
        width = 9,
        dpi = 600,
