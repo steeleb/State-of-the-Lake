@@ -1,48 +1,51 @@
-####2007####
+# heatmaps for temp/do
 
-buoy_2007 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2007_tempstring_L1.csv')
+library(tidyverse)
+library(rLakeAnalyzer)
 
-unique(buoy_2007$temp_flag)
+# 2007 temperature heatmap ####
+
+buoy_2007 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2007_tempstring_L1_v2022.csv')
+
+names(buoy_2007)
+
+# check for flags - only clean data
+unique(buoy_2007$flag_temp9p5m)
+unique(buoy_2007$flag_temp10p5m)
+unique(buoy_2007$flag_temp11p5m)
+unique(buoy_2007$flag_temp13p5m)
+
+# check locations - we only want data at loon
 unique(buoy_2007$location)
 
 buoy_2007_sub <- buoy_2007 %>% 
-  mutate_at(vars(TempC_9m, TempC_10m, TempC_11m),
-            funs(case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                           TRUE ~ .))) %>% 
-  mutate(TempC_9m = case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ TempC_13m,
-                              TRUE ~ TempC_9m)) %>% 
-  mutate(TempC_13m = case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                                    TRUE ~ TempC_13m)) %>% 
-  mutate_at(vars(TempC_0m:TempC_13m),
-            funs(case_when(location == 'offline' ~ NA_real_,
-                           TRUE ~ .)))
-             
+  mutate(waterTemperature_degC_9p5m = if_else(flag_temp9p5m == 'd', NA_real_, waterTemperature_degC_9p5m),
+         waterTemperature_degC_10p5m = if_else(flag_temp9p5m == 'd', NA_real_, waterTemperature_degC_10p5m))
+         
 
 buoy_2007_sub <- buoy_2007_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.0 = `TempC_0p5m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.0 = `TempC_1p5m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.0 = `TempC_2p5m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`,
-         wtr_10.5 = `TempC_10m`,
-         wtr_11.5 = `TempC_11m`,
-         wtr_13.5 = `TempC_13m`) %>% 
-  select(-temp_flag, -location)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.0 = waterTemperature_degC_1m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.0 = waterTemperature_degC_2m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.0 = waterTemperature_degC_3m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m) %>% 
+  filter(if_all(wtr_0.5:wtr_8.5, ~!is.na(.)))
 
 buoy_2007_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2007.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2007.txt", delim='\t')
 
-wtr.temp.2007 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2007.txt")
+wtr.temp.2007 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2007.txt",
+                         tz = "UTC")
 
 wtr.heat.map(wtr.temp.2007,
              xlim=c(as.POSIXct('2007-01-01', tz='UTC'), as.POSIXct('2008-01-01', tz='UTC')),
@@ -62,50 +65,50 @@ wtr.heat.map(wtr.temp.2007,
                              cex.main=1)
 )
 
-####2008####
-buoy_2008 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2008_tempstring_L1.csv')
 
-unique(buoy_2008$temp_flag)
+# 2008 temperature heatmap ####
+
+buoy_2008 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2008_tempstring_L1_v2022.csv')
+
+names(buoy_2008)
+
+# check for flags - only clean data
+unique(buoy_2008$flag_temp9p5m)
+unique(buoy_2008$flag_temp10p5m)
+unique(buoy_2008$flag_temp11p5m)
+unique(buoy_2008$flag_temp13p5m)
+
+# check locations - we only want data at loon
 unique(buoy_2008$location)
 
 buoy_2008_sub <- buoy_2008 %>% 
-  mutate_at(vars(TempC_9m, TempC_10m, TempC_11m),
-            funs(case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                           TRUE ~ .))) %>% 
-  mutate(TempC_9m = case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ TempC_13m,
-                              TRUE ~ TempC_9m)) %>% 
-  mutate(TempC_13m = case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                               TRUE ~ TempC_13m)) %>% 
-  mutate_at(vars(TempC_0m:TempC_13m),
-            funs(case_when(location == 'offline' ~ NA_real_,
-                           TRUE ~ .)))
+  mutate(waterTemperature_degC_9p5m = if_else(flag_temp9p5m == 'd', NA_real_, waterTemperature_degC_9p5m),
+         waterTemperature_degC_10p5m = if_else(flag_temp9p5m == 'd', NA_real_, waterTemperature_degC_10p5m))
 
 
 buoy_2008_sub <- buoy_2008_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.0 = `TempC_0p5m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.0 = `TempC_1p5m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.0 = `TempC_2p5m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`,
-         wtr_10.5 = `TempC_10m`,
-         wtr_11.5 = `TempC_11m`,
-         wtr_13.5 = `TempC_13m`) %>% 
-  select(-temp_flag, -location)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.0 = waterTemperature_degC_1m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.0 = waterTemperature_degC_2m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.0 = waterTemperature_degC_3m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m) %>% 
+  filter(if_all(wtr_0.5:wtr_8.5, ~!is.na(.)))
 
 buoy_2008_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2008.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2008.txt", delim='\t')
 
-wtr.temp.2008 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2008.txt")
+wtr.temp.2008 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2008.txt",
+                         tz = "UTC")
 
 wtr.heat.map(wtr.temp.2008,
              xlim=c(as.POSIXct('2008-01-01', tz='UTC'), as.POSIXct('2009-01-01', tz='UTC')),
@@ -125,54 +128,50 @@ wtr.heat.map(wtr.temp.2008,
                              cex.main=1)
 )
 
-####2009####
-buoy_2009 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2009_tempstring_L1.csv')
+# 2009 tempearture heat map####
 
-unique(buoy_2009$temp_flag)
+buoy_2009 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2009_tempstring_L1_v2022.csv')
+
+names(buoy_2009)
+
+# check for flags - only clean data
+unique(buoy_2009$flag_alltemp)
+unique(buoy_2009$flag_temp9p5m)
+unique(buoy_2009$flag_temp10p5m)
+unique(buoy_2009$flag_temp11p5m)
+unique(buoy_2009$flag_temp13p5m)
+
+# check locations - we only want data at loon
 unique(buoy_2009$location)
 
 buoy_2009_sub <- buoy_2009 %>% 
-  mutate_at(vars(TempC_9m, TempC_10m, TempC_11m, TempC_13m),
-            funs(case_when(temp_flag == 'i, 9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                           TRUE ~ .))) %>% 
-  mutate_at(vars(TempC_9m, TempC_10m, TempC_11m),
-            funs(case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                           TRUE ~ .))) %>% 
-  mutate(TempC_9m = case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ TempC_13m,
-                              TRUE ~ TempC_9m)) %>% 
-  mutate(TempC_13m = case_when(temp_flag == '9.5d, 10.5d, 11.5d, 13.5d' ~ NA_real_,
-                               TRUE ~ TempC_13m)) %>% 
-  mutate_at(vars(TempC_0m:TempC_13m),
-            funs(case_when(location == 'offline' ~ NA_real_,
-                           temp_flag == 'q' ~ NA_real_,
-                           TRUE ~ .)))
+  filter(location == "loon") %>% 
+  mutate(waterTemperature_degC_9p5m = if_else(flag_temp9p5m == 'd', NA_real_, waterTemperature_degC_9p5m),
+         waterTemperature_degC_10p5m = if_else(flag_temp9p5m == 'd', NA_real_, waterTemperature_degC_10p5m))
 
 
 buoy_2009_sub <- buoy_2009_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.0 = `TempC_0p5m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.0 = `TempC_1p5m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.0 = `TempC_2p5m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`,
-         wtr_10.5 = `TempC_10m`,
-         wtr_11.5 = `TempC_11m`,
-         wtr_13.5 = `TempC_13m`) %>% 
-  select(-temp_flag, -location)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.0 = waterTemperature_degC_1m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.0 = waterTemperature_degC_2m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.0 = waterTemperature_degC_3m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m) 
 
 buoy_2009_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2009.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2009.txt", delim='\t')
 
-wtr.temp.2009 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2009.txt")
+wtr.temp.2009 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2009.txt",
+                         tz = "UTC")
 
 wtr.heat.map(wtr.temp.2009,
              xlim=c(as.POSIXct('2009-01-01', tz='UTC'), as.POSIXct('2010-01-01', tz='UTC')),
@@ -193,58 +192,60 @@ wtr.heat.map(wtr.temp.2009,
 )
 
 
-####2010####
-buoy_2010 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2010_tempstring_L1.csv')
+# 2010 temperature heatmaps####
 
-unique(buoy_2010$temp_flag)
+buoy_2010 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2010_tempstring_L1_v2022.csv')
+
+names(buoy_2010)
+
+# check for flags - only clean data
+unique(buoy_2010$flag_alltemp)
+unique(buoy_2010$flag_temp11p5m)
+unique(buoy_2010$flag_temp13p5m)
+
+# check locations - we only want data at loon
 unique(buoy_2010$location)
 
 buoy_2010_sub <- buoy_2010 %>% 
-  mutate(TempC_0p5m = case_when(temp_flag == 'q0.5m' ~ NA_real_,
-                              TRUE ~ TempC_0p5m)) %>% 
-  mutate_at(vars(TempC_0p5m:TempC_13m),
-            funs(case_when(location == 'offline' ~ NA_real_,
-                           location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           temp_flag == 'q' ~ NA_real_,
-                           TRUE ~ .)))
-
+  filter(location == "loon") %>% 
+  mutate(across(waterTemperature_degC_0p5m:waterTemperature_degC_13p5m, 
+                ~ if_else(!is.na(flag_alltemp), NA_real_, .))) 
 
 buoy_2010_sub <- buoy_2010_sub %>% 
-  rename(wtr_1.0 = `TempC_0p5m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.0 = `TempC_1p5m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.0 = `TempC_2p5m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`,
-         wtr_10.5 = `TempC_10m`,
-         wtr_11.5 = `TempC_11m`,
-         wtr_13.5 = `TempC_13m`) %>% 
-  select(-TempC_0m, -temp_flag, -location)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.0 = waterTemperature_degC_1m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.0 = waterTemperature_degC_2m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.0 = waterTemperature_degC_3m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m,
+         wtr_10.5 = waterTemperature_degC_10p5m)
 
 buoy_2010_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2010.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2010.txt", delim='\t')
 
-wtr.temp.2010 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2010.txt")
+wtr.temp.2010 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2010.txt",
+                         tz = "UTC")
 
 wtr.heat.map(wtr.temp.2010,
              xlim=c(as.POSIXct('2010-05-01', tz='UTC'), as.POSIXct('2010-11-01', tz='UTC')),
              plot.axes = { axis.POSIXct(side=1, 
                                         x=wtr.temp.2010$datetime, 
-                                        at = (seq(as.POSIXct('2010-05-01', tz='UTC'),
-                                                  as.POSIXct('2010-11-01', tz='UTC'), 
+                                        at = (seq(as.POSIXct('2010-01-01', tz='UTC'),
+                                                  as.POSIXct('2011-01-01', tz='UTC'), 
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
+             zlim=c(-2,30),
              plot.title=title(main='2010',
                               ylab="depth (m)",
                               xlab=NULL),
@@ -253,50 +254,51 @@ wtr.heat.map(wtr.temp.2010,
                              cex.main=1)
 )
 
-####2011####
-buoy_2011 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2011_tempstring_L1.csv',
-                      col_types = 'Tcnnnnnnnnnn')
 
+# 2011 temperature heatmaps####
+
+buoy_2011 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2011_tempstring_L1_v2022.csv')
+
+names(buoy_2011)
+
+# check locations - we only want data at loon
 unique(buoy_2011$location)
 
 buoy_2011_sub <- buoy_2011 %>% 
-  mutate_at(vars(TempC_0m:TempC_9m),
-            funs(case_when(location == 'offline' ~ NA_real_,
-                           location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           TRUE ~ .)))
-
+  filter(location == "loon") 
 
 buoy_2011_sub <- buoy_2011_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-location)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m)
 
 buoy_2011_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2011.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2011.txt", delim='\t')
 
-wtr.temp.2011 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2011.txt")
+wtr.temp.2011 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2011.txt",
+                         tz = "UTC")
 
 wtr.heat.map(wtr.temp.2011,
              xlim=c(as.POSIXct('2011-05-01', tz='UTC'), as.POSIXct('2011-11-01', tz='UTC')),
              plot.axes = { axis.POSIXct(side=1, 
                                         x=wtr.temp.2011$datetime, 
-                                        at = (seq(as.POSIXct('2011-05-01', tz='UTC'),
-                                                  as.POSIXct('2011-11-01', tz='UTC'), 
+                                        at = (seq(as.POSIXct('2011-01-01', tz='UTC'),
+                                                  as.POSIXct('2011-01-01', tz='UTC'), 
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
+             zlim=c(-2,30),
+             
              plot.title=title(main='2011',
                               ylab="depth (m)",
                               xlab=NULL),
@@ -305,39 +307,94 @@ wtr.heat.map(wtr.temp.2011,
                              cex.main=1)
 )
 
-####2013####
-buoy_2013 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2013_tempstring_L1.csv',
-                      col_types = 'Tcnnnnnnnnnn')
 
+
+# 2012 temperature heatmaps####
+
+buoy_2012 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2012_tempstring_L1_v2022.csv')
+
+names(buoy_2012)
+
+# check locations - we only want data at loon
+unique(buoy_2012$location)
+
+buoy_2012_sub <- buoy_2012 %>% 
+  filter(location == "loon") 
+
+buoy_2012_sub <- buoy_2012_sub %>% 
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m)
+
+buoy_2012_sub %>%
+  arrange(datetime) %>%
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2012.txt", delim='\t')
+
+wtr.temp.2012 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2012.txt",
+                         tz = "UTC")
+
+wtr.heat.map(wtr.temp.2012,
+             xlim=c(as.POSIXct('2012-05-01', tz='UTC'), as.POSIXct('2012-11-01', tz='UTC')),
+             plot.axes = { axis.POSIXct(side=1, 
+                                        x=wtr.temp.2012$datetime, 
+                                        at = (seq(as.POSIXct('2012-05-01', tz='UTC'),
+                                                  as.POSIXct('2012-11-01', tz='UTC'), 
+                                                  by = "month")), 
+                                        format = "%b"); 
+               axis(2) },
+             zlim=c(-2,30),
+             plot.title=title(main='2012',
+                              ylab="depth (m)",
+                              xlab=NULL),
+             key.title=title(main="water\ntemp\n(C)",
+                             font.main=1,
+                             cex.main=1)
+)
+
+
+
+
+# 2013 temperature heatmaps####
+
+buoy_2013 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2013_tempstring_L1_v2022.csv')
+
+names(buoy_2013)
+
+# check locations - we only want data at loon
 unique(buoy_2013$location)
 
 buoy_2013_sub <- buoy_2013 %>% 
-  mutate_at(vars(TempC_0m:TempC_9m),
-            funs(case_when(location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           location == 'offline' ~ NA_real_,
-                           TRUE ~ .)))
-
+  filter(location == "loon") 
 
 buoy_2013_sub <- buoy_2013_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-location)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m)
 
 buoy_2013_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2013.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2013.txt", delim='\t')
 
-wtr.temp.2013 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2013.txt")
+wtr.temp.2013 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2013.txt",
+                         tz = "UTC")
 
 wtr.heat.map(wtr.temp.2013,
              xlim=c(as.POSIXct('2013-05-01', tz='UTC'), as.POSIXct('2013-11-01', tz='UTC')),
@@ -348,7 +405,7 @@ wtr.heat.map(wtr.temp.2013,
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
+             zlim=c(-2,30),
              plot.title=title(main='2013',
                               ylab="depth (m)",
                               xlab=NULL),
@@ -358,47 +415,48 @@ wtr.heat.map(wtr.temp.2013,
 )
 
 
-####2014####
-buoy_2014 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2014_tempstring_L1.csv',
-                      col_types = 'Tcnnnnnnnnnnnc')
+# 2014 temperature heatmaps####
 
+buoy_2014 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2014_tempstring_L1_v2022.csv')
+
+names(buoy_2014)
+
+# check flags
+unique(buoy_2014$flag_alltemp)
+unique(buoy_2014$flag_temp10p5m)
+
+# check locations - we only want data at loon
 unique(buoy_2014$location)
-unique(buoy_2014$temp_flag)
 
 buoy_2014_sub <- buoy_2014 %>% 
-  mutate_at(vars(TempC_0m:TempC_10m),
-            funs(case_when(location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           location == 'offline' ~ NA_real_,
-                           temp_flag == 'i' ~ NA_real_,
-                           TRUE ~ .))) %>% 
-  mutate(TempC_10m = case_when(temp_flag == '10d, 10n' ~ NA_real_,
-                               TRUE ~ TempC_10m))
-
+  filter(location == "loon") %>% 
+  mutate(waterTemperature_degC_10p5m = if_else(flag_temp10p5m == 'd', 
+                                               NA_real_, 
+                                               waterTemperature_degC_10p5m))
 
 buoy_2014_sub <- buoy_2014_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-location, -temp_flag, -TempC_10m)  
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m,
+         wtr_10.5 = waterTemperature_degC_10p5m)
 
 buoy_2014_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2014.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2014.txt", delim='\t')
 
-wtr.temp.2014 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2014.txt")
+wtr.temp.2014 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2014.txt",
+                         tz = "UTC")
 
-wtr.heat.map(subset(wtr.temp.2014,
-                    subset =(datetime>=as.POSIXct('2014-05-01', tz='UTC') & 
-                               datetime< as.POSIXct('2014-11-01', tz='UTC'))),
+wtr.heat.map(wtr.temp.2014,
              xlim=c(as.POSIXct('2014-05-01', tz='UTC'), as.POSIXct('2014-11-01', tz='UTC')),
              plot.axes = { axis.POSIXct(side=1, 
                                         x=wtr.temp.2014$datetime, 
@@ -407,7 +465,7 @@ wtr.heat.map(subset(wtr.temp.2014,
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
+             zlim=c(-2,30),
              plot.title=title(main='2014',
                               ylab="depth (m)",
                               xlab=NULL),
@@ -416,79 +474,41 @@ wtr.heat.map(subset(wtr.temp.2014,
                              cex.main=1)
 )
 
-####2015####
-buoy_2015 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2015_tempstring_L1.csv',
-                      col_types = 'Tnnnnnnnnnncc')
 
+
+# 2015 temperature heatmaps####
+
+buoy_2015 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2015_tempstring_L1_v2022.csv')
+
+names(buoy_2015)
+
+# check locations - we only want data at loon
 unique(buoy_2015$location)
-unique(buoy_2015$temp_flag)
 
 buoy_2015_sub <- buoy_2015 %>% 
-  mutate_at(vars(TempC_0m:TempC_9m),
-            funs(case_when(location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           location == 'offline' ~ NA_real_,
-                           temp_flag == 'i' ~ NA_real_,
-                           TRUE ~ .))) 
+  filter(location == "loon") 
 
 buoy_2015_sub <- buoy_2015_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-location, -temp_flag) %>% 
-  filter(datetime < as.POSIXct('2015-08-07 14:15', tz='UTC'))
+  select(datetime,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m)
 
-hobo_2015 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2015_hobotempstring_L1.csv',
-                      col_types = 'Tnnnnnnnnn')
-
-hobo_2015_sub <- hobo_2015 %>% 
-  rename(wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-wtr_2.5, -wtr_6.5)  
-
-#winter hobo
-winter1516 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2015-2016_hobotempstring_L1.csv',
-                      col_types = 'Tnnnnnnnnn')
-
-winter1516_sub <- winter1516 %>% 
-  rename(wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) 
-
-buoy_hobo_2015 <- full_join(buoy_2015_sub, hobo_2015_sub) %>% 
-  full_join(., winter1516_sub) %>% 
-  select(-wtr_2.5, -wtr_6.5)
-
-buoy_hobo_2015 %>%
+buoy_2015_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2015.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2015.txt", delim='\t')
 
-wtr.temp.2015 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2015.txt")
+wtr.temp.2015 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2015.txt",
+                         tz = "UTC")
 
-wtr.heat.map(subset(wtr.temp.2015,
-                    subset =(datetime>=as.POSIXct('2015-05-01', tz='UTC') & 
-                               datetime< as.POSIXct('2015-11-01', tz='UTC'))),
+wtr.heat.map(wtr.temp.2015,
              xlim=c(as.POSIXct('2015-05-01', tz='UTC'), as.POSIXct('2015-11-01', tz='UTC')),
              plot.axes = { axis.POSIXct(side=1, 
                                         x=wtr.temp.2015$datetime, 
@@ -497,24 +517,6 @@ wtr.heat.map(subset(wtr.temp.2015,
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
-             plot.title=title(main='2015',
-                              ylab="depth (m)",
-                              xlab=NULL),
-             key.title=title(main="water\ntemp\n(C)",
-                             font.main=1,
-                             cex.main=1)
-)
-
-wtr.heat.map(wtr.temp.2015,
-             xlim=c(as.POSIXct('2015-01-01', tz='UTC'), as.POSIXct('2016-01-01', tz='UTC')),
-             plot.axes = { axis.POSIXct(side=1, 
-                                        x=wtr.temp.2015$datetime, 
-                                        at = (seq(as.POSIXct('2015-01-01', tz='UTC'),
-                                                  as.POSIXct('2016-01-01', tz='UTC'), 
-                                                  by = "month")), 
-                                        format = "%b"); 
-               axis(2) },
              zlim=c(-2,30),
              plot.title=title(main='2015',
                               ylab="depth (m)",
@@ -525,78 +527,43 @@ wtr.heat.map(wtr.temp.2015,
 )
 
 
+# 2016 temperature heatmaps####
 
-####2016####
-early16 <- winter1516 %>% 
-  filter(datetime >= as.POSIXct('2016-01-01', tz='UTC')) %>% 
-  rename(wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) 
+buoy_2016 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2016_tempstring_L1_v2022.csv')
 
-#through 2016-05-03 11:00:00
+names(buoy_2016)
 
-buoy_2016 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2016_tempstring_L1.csv',
-                      col_types = 'Tnnnnnnnnnnnc')
+# check flags
+unique(buoy_2016$flag_temp0p5m)
 
+# check locations - we only want data at loon
 unique(buoy_2016$location)
 
 buoy_2016_sub <- buoy_2016 %>% 
-  mutate_at(vars(TempC_0m:TempC_9m),
-            funs(case_when(location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           TRUE ~ .))) %>% 
-  select(-Chlor_RFU) %>% 
-  filter(datetime>as.POSIXct('2016-05-03 11:00:00', tz='UTC'))
+  filter(location == "loon") 
 
 buoy_2016_sub <- buoy_2016_sub %>% 
-  rename(wtr_0.5 = `TempC_0m`,
-         wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-location)  %>% 
-  filter(datetime <= as.POSIXct('2016-10-12 12:00', tz='UTC'))
+  select(datetime,
+         wtr_0.5 = waterTemperature_degC_0p5m,
+         wtr_1.5 = waterTemperature_degC_1p5m,
+         wtr_2.5 = waterTemperature_degC_2p5m,
+         wtr_3.5 = waterTemperature_degC_3p5m,
+         wtr_4.5 = waterTemperature_degC_4p5m,
+         wtr_5.5 = waterTemperature_degC_5p5m,
+         wtr_6.5 = waterTemperature_degC_6p5m,
+         wtr_7.5 = waterTemperature_degC_7p5m,
+         wtr_8.5 = waterTemperature_degC_8p5m,
+         wtr_9.5 = waterTemperature_degC_9p5m)
 
-#winter hobo
-winter1617 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2016-2017_hobotempstring_L1.csv',
-                       col_types = 'Tnnnnnnnnn')
-
-winter1617_sub <- winter1617 %>% 
-  rename(wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) 
-
-buoy_hobo_2016 <- full_join(early16, buoy_2016_sub) %>% 
-  full_join(., winter1617_sub) 
-
-buoy_hobo_2016 %>%
-  filter(datetime < as.POSIXct('2017-01-01', tz='UTC')) %>% 
+buoy_2016_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2016.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2016.txt", delim='\t')
 
-wtr.temp.2016 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2016.txt")
+wtr.temp.2016 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2016.txt",
+                         tz = "UTC")
 
-wtr.heat.map(subset(wtr.temp.2016,
-                    subset =(datetime>=as.POSIXct('2016-05-01', tz='UTC') & 
-                               datetime< as.POSIXct('2016-11-01', tz='UTC'))),
+wtr.heat.map(wtr.temp.2016,
              xlim=c(as.POSIXct('2016-05-01', tz='UTC'), as.POSIXct('2016-11-01', tz='UTC')),
              plot.axes = { axis.POSIXct(side=1, 
                                         x=wtr.temp.2016$datetime, 
@@ -605,24 +572,6 @@ wtr.heat.map(subset(wtr.temp.2016,
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
-             plot.title=title(main='2016',
-                              ylab="depth (m)",
-                              xlab=NULL),
-             key.title=title(main="water\ntemp\n(C)",
-                             font.main=1,
-                             cex.main=1)
-)
-
-wtr.heat.map(wtr.temp.2016,
-             xlim=c(as.POSIXct('2016-01-01', tz='UTC'), as.POSIXct('2017-01-01', tz='UTC')),
-             plot.axes = { axis.POSIXct(side=1, 
-                                        x=wtr.temp.2016$datetime, 
-                                        at = (seq(as.POSIXct('2016-01-01', tz='UTC'),
-                                                  as.POSIXct('2017-01-01', tz='UTC'), 
-                                                  by = "month")), 
-                                        format = "%b"); 
-               axis(2) },
              zlim=c(-2,30),
              plot.title=title(main='2016',
                               ylab="depth (m)",
@@ -632,62 +581,44 @@ wtr.heat.map(wtr.temp.2016,
                              cex.main=1)
 )
 
-####2017####
-early17 <- winter1617 %>% 
-  filter(datetime >= as.POSIXct('2017-01-01', tz='UTC')) %>% 
-  rename(wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) 
 
-#through 2017-05-17 10:15:00
+# 2017 temperature heatmaps####
 
-buoy_2017 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/2017_tempstring_L1.csv',
-                      col_types = 'Tnnnnnnnnnnc')
+buoy_2017 <- read_csv('C:/Users/steeleb/Dropbox/Lake Sunapee/monitoring/buoy data/data/all sensors/L1/tempstring/2017_tempstring_L1_v2022.csv')
 
+names(buoy_2017)
+
+# check flags 
+unique(buoy_2017$flag_temp0p85m)
+
+# check locations - we only want data at loon
 unique(buoy_2017$location)
 
 buoy_2017_sub <- buoy_2017 %>% 
-  mutate_at(vars(TempC_0m:TempC_9m),
-            funs(case_when(location == 'in transit' ~ NA_real_,
-                           location == 'harbor' ~ NA_real_,
-                           location == 'offline' ~ NA_real_,
-                           location == 'harbor, water sensors offline' ~ NA_real_,
-                           TRUE ~ .))) #%>% 
-  #filter(datetime>as.POSIXct('2017-05-17 10:15:00', tz='UTC'))
+  filter(location == "loon") 
 
 buoy_2017_sub <- buoy_2017_sub %>% 
-  rename(wtr_1.5 = `TempC_1m`,
-         wtr_2.5 = `TempC_2m`,
-         wtr_3.5 = `TempC_3m`,
-         wtr_4.5 = `TempC_4m`,
-         wtr_5.5 = `TempC_5m`,
-         wtr_6.5 = `TempC_6m`,
-         wtr_7.5 = `TempC_7m`,
-         wtr_8.5 = `TempC_8m`,
-         wtr_9.5 = `TempC_9m`) %>% 
-  select(-location, -TempC_0m)  
-
-#no winter hobo yet
-
-
-#errors when merging for some reason - just going to display buoy data
+  select(datetime,
+         wtr_0.8 = waterTemperature_degC_0p85m,
+         wtr_1.8 = waterTemperature_degC_1p85m,
+         wtr_2.8 = waterTemperature_degC_2p85m,
+         wtr_3.8 = waterTemperature_degC_3p85m,
+         wtr_4.8 = waterTemperature_degC_4p85m,
+         wtr_5.8 = waterTemperature_degC_5p85m,
+         wtr_6.8 = waterTemperature_degC_6p85m,
+         wtr_7.8 = waterTemperature_degC_7p85m,
+         wtr_8.8 = waterTemperature_degC_8p85m,
+         wtr_9.8 = waterTemperature_degC_9p85m)
 
 buoy_2017_sub %>%
   arrange(datetime) %>%
-  mutate(datetime = as.character(datetime)) %>% 
-  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2017.txt", delim='\t')
+  mutate(datetime = as.character(format(datetime, '%Y-%m-%d %H:%M'))) %>% 
+  write_delim("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2017.txt", delim='\t')
 
-wtr.temp.2017 <- load.ts("C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/r program sotl/heatmap files/water_temp_buoy_2017.txt")
+wtr.temp.2017 <- load.ts(fPath = "C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/buoy_heatmaps/water_temp_buoy_2017.txt",
+                         tz = "UTC")
 
-wtr.heat.map(subset(wtr.temp.2017,
-                    subset =(datetime>=as.POSIXct('2017-05-01', tz='UTC') & 
-                               datetime< as.POSIXct('2017-11-01', tz='UTC'))),
+wtr.heat.map(wtr.temp.2017,
              xlim=c(as.POSIXct('2017-05-01', tz='UTC'), as.POSIXct('2017-11-01', tz='UTC')),
              plot.axes = { axis.POSIXct(side=1, 
                                         x=wtr.temp.2017$datetime, 
@@ -696,24 +627,6 @@ wtr.heat.map(subset(wtr.temp.2017,
                                                   by = "month")), 
                                         format = "%b"); 
                axis(2) },
-             zlim=c(5,30),
-             plot.title=title(main='2017',
-                              ylab="depth (m)",
-                              xlab=NULL),
-             key.title=title(main="water\ntemp\n(C)",
-                             font.main=1,
-                             cex.main=1)
-)
-
-wtr.heat.map(wtr.temp.2017,
-             xlim=c(as.POSIXct('2017-01-01', tz='UTC'), as.POSIXct('2017-01-01', tz='UTC')),
-             plot.axes = { axis.POSIXct(side=1, 
-                                        x=wtr.temp.2017$datetime, 
-                                        at = (seq(as.POSIXct('2017-01-01', tz='UTC'),
-                                                  as.POSIXct('2017-01-01', tz='UTC'), 
-                                                  by = "month")), 
-                                        format = "%b"); 
-               axis(2) },
              zlim=c(-2,30),
              plot.title=title(main='2017',
                               ylab="depth (m)",
@@ -722,3 +635,14 @@ wtr.heat.map(wtr.temp.2017,
                              font.main=1,
                              cex.main=1)
 )
+
+
+
+
+
+
+
+
+
+
+
