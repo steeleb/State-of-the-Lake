@@ -2,18 +2,9 @@
 
 library(tidyverse)
 
-# read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/LSPALMP_1986-2020_v2021-03-29.csv')
-
-#read in station locations
-lmp_locs <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
-
 # filter and clean up cond for inlake cond ####
-#filter for cond
-unique(lmp$parameter)
-
 lmp_cond <- lmp %>% 
-  filter(parameter == 'cond_uScm') %>% 
+  filter(parameter == 'specificConductance_uScm') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))
@@ -28,7 +19,9 @@ lmp_summer_cond_select <- lmp_summer_cond %>%
 
 #grab epi samples OR integrated at cove
 lmp_summer_cond_select <- lmp_summer_cond_select %>% 
-  filter(site_type == 'stream' | (site_type == 'lake' & layer == 'E') | sub_site_type == 'cove')
+  filter(site_type == 'tributary' | 
+           (site_type == 'lake' & layer == 'E') | 
+           sub_site_type == 'cove')
 
 ## aggregate and join by year/site ----
 lmp_cond_aggyearsite <- lmp_summer_cond_select %>% 

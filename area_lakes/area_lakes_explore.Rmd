@@ -1,0 +1,170 @@
+---
+title: "Area Lakes Explore"
+author: "B. Steele"
+date: "2023-05-26"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+
+dump_dir = 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/area_lakes/'
+```
+
+## Load data
+
+There are only data for 2021/2022 for the area lakes, so we need the subset of those data and to filter the LMP data for the in-lake data from that time, as well.
+
+```{r}
+area_chem = read.csv('https://github.com/Lake-Sunapee-Protective-Association/LMP/raw/main/raw%20data%20files/area%20lakes%20subset/area_chem_subset.csv')
+
+sunapee_2022 <- read.csv('https://github.com/Lake-Sunapee-Protective-Association/LMP/raw/main/primary%20files/LSPALMP_1986-2022_v2023-01-22.csv') %>% 
+  filter(as.numeric(format(as.Date(date), '%Y')) == 2022, 
+         parameter == 'phosphorusTotal_mgl' |
+           parameter == 'specificConductance_uScm' |
+           parameter == 'turbidity_NTU')
+
+sunapee_2022$LAKE = 'LAKE SUNAPEE'
+
+#drop a few columns
+sunapee_2022_subset <- sunapee_2022 %>% 
+  filter(gen_flag == '', 
+         flag == 'BDL' | flag == '') %>% 
+  select(-c(flag, gen_flag, org_sampid, org_id))
+
+#and fix the site type column
+sunapee_2022_subset <- sunapee_2022_subset %>% 
+  mutate(site_type = case_when(station < 500 ~ 'lake',
+                               TRUE ~ 'tributary'))
+
+# drop the littoral sites, only grab a subset of sites
+sun_station_list = c(200, 210, 220, 230, 
+                 505, 665, 788, 830)
+sunapee_2022_sub <- sunapee_2022_subset %>%
+  filter(station %in% sun_station_list)
+
+#save station as a character just for this purpose
+sunapee_2022_sub$station = as.character(sunapee_2022_sub$station)
+```
+
+## Do some formatting
+
+General renaming/housekeeping
+
+```{r}
+area_chem <- area_chem %>% 
+  mutate(LAKE = toupper(LAKE),
+         StationText = toupper(StationText)) %>% 
+  mutate(StationText = ifelse(grepl('bottom', StationText, ignore.case = T), 'HYPOLIMNION', StationText),
+         site_type = ifelse(grepl('inlet', StationText, ignore.case = T) |
+                              grepl('outlet', StationText, ignore.case = T) |
+                              grepl('brook', StationText, ignore.case = T) |
+                              grepl('bk', StationText, ignore.case = T), 
+                            'tributary', 
+                            'lake')) %>% 
+    relocate(LAKE, StationText, site_type) %>% 
+  select(-c(STATION, H_ION:COLOR, YEAR:Date_Sta_Lr))
+
+#and we can drop all parameters except tp/cond/turb
+area_chem <- area_chem %>% 
+  select(-c(TOWN, PH, Chloride))
+```
+
+And now, let's reorient to match the sunapee data
+
+```{r}
+area_chem <- area_chem %>% 
+  rename(date = DATE,
+         depth_m = Depth,
+         layer = LAYER,
+         phosphorusTotal_mgl = TP, 
+         specificConductance_uScm = COND,
+         turbidity_NTU = TURBIDITY,
+         station = StationText) %>% 
+  pivot_longer(cols = c(phosphorusTotal_mgl,
+                        specificConductance_uScm,
+                        turbidity_NTU), 
+               names_to = 'parameter')
+```
+
+## Join them together
+
+```{r}
+comp_data = full_join(area_chem, sunapee_2022_sub) %>% 
+  mutate(date = as.Date(date)) %>% 
+  filter(date >= '2022-05-01')
+```
+
+And a quick plots for each variable
+
+```{r}
+comp_data %>% 
+  filter(parameter == 'phosphorusTotal_mgl', 
+         layer == 'E' | layer == '' | layer == 'I') %>% 
+  ggplot(., aes(x = as.Date(date), y = value*1000, color = LAKE)) +
+  geom_point() +
+  facet_grid(site_type ~ ., scales = 'free_y') +
+  labs(title = 'Total Phosphorus (2022)\nSunapee Watershed',
+       x = NULL, 
+       y = 'Total Phosphorus (ug/L)',
+       color = NULL) +
+  theme_bw() +
+  scale_color_colorblind() +
+  theme(legend.position = 'bottom',
+        plot.title = element_text(face = 'bold', hjust = 0.5))
+ggsave(file.path(dump_dir, 'TP_2022_arealakes_sundeep.jpg'),
+       height = 6,
+       width = 8,
+       dpi = 600,
+       units = 'in',
+       bg = 'white')
+```
+
+```{r}
+comp_data %>% 
+  filter(parameter == 'specificConductance_uScm', 
+         layer == 'E' | layer == '' | layer == 'I',
+         depth_m < 7 | is.na(depth_m)) %>% 
+  ggplot(., aes(x = as.Date(date), y = value, color = LAKE)) +
+  geom_point() +
+  facet_grid(site_type ~ ., scales = 'free_y') +
+  labs(title = 'Conductivity (2022)\nSunapee Watershed',
+       x = NULL, 
+       y = 'Specific Conductance (uS/cm)',
+       color = NULL) +
+  theme_bw() +
+  scale_color_colorblind() +
+  theme(legend.position = 'bottom',
+        plot.title = element_text(face = 'bold', hjust = 0.5))
+ggsave(file.path(dump_dir, 'cond_2022_arealakes_sundeep.jpg'),
+       height = 6,
+       width = 8,
+       dpi = 600,
+       units = 'in',
+       bg = 'white')
+```
+
+```{r}
+comp_data %>% 
+  filter(parameter == 'turbidity_NTU', 
+         layer == 'E' | layer == '' | layer == 'I',
+         depth_m < 7 | is.na(depth_m)) %>% 
+  ggplot(., aes(x = as.Date(date), y = value, color = LAKE)) +
+  geom_point() +
+  facet_grid(site_type ~ ., scales = 'free_y') +
+  labs(title = 'Turbidity (2022)\nSunapee Watershed',
+       x = NULL, 
+       y = 'Turbidity (NTU)',
+       color = NULL) +
+  theme_bw() +
+  scale_color_colorblind() +
+  theme(legend.position = 'bottom',
+        plot.title = element_text(face = 'bold', hjust = 0.5))
+ggsave(file.path(dump_dir, 'turb_2022_arealakes_sundeep.jpg'),
+       height = 6,
+       width = 8,
+       dpi = 600,
+       units = 'in',
+       bg = 'white')
+```

@@ -5,7 +5,7 @@ source('conductivity_summary.R')
 library(sf)
 library(tmap)
 library(raster)
-library(gifski)
+#library(gifski)
 library(ggthemes)
 
 #point to local spatial files folder
@@ -22,6 +22,102 @@ final_theme=theme_bw() +
         axis.title=element_text(size=14,face="bold"),
         plot.title=element_text(size=16, face='bold', hjust=0.5)) #save as a grom
 
+# filter and clean up conductivity ####
+#filter for conductivity
+unique(lmp$parameter)
+
+lmp_cond <- lmp %>% 
+  filter(parameter == 'specificConductance_uScm') %>% 
+  mutate(date = as.Date(date)) %>% 
+  mutate(year = format(date, '%Y')) %>% 
+  mutate(month = as.numeric(format(date, '%m')))
+
+#filter jun - sept
+lmp_summer_cond = lmp_cond %>% 
+  filter(month >=6 & month <=9)
+
+#filter for in-lake and longterm sites; epi and integrated only
+lmp_cond_lake <- lmp_summer_cond %>% 
+  filter(site_type == 'lake') %>% 
+  filter(station == 10 |
+           station == 20 |
+           station == 30 |
+           station == 60 |
+           station == 70 |
+           station == 80 |
+           station == 90 |
+           station == 110 |
+           station == 200 |
+           station == 210 |
+           station == 220 |
+           station == 230) %>% 
+  filter(layer == 'E' | layer == 'I')
+
+ggplot(lmp_cond_lake, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~.) +
+  theme_bw()
+
+#aggregate to median, max, mean, 3rd quartile value
+lmp_agg_lake <- lmp_cond_lake %>% 
+  group_by(station, year) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75))
+
+## get station list and apply loc info ####
+stationlist <- data.frame(unique(lmp_cond_lake$station))
+colnames(stationlist) = 'station'
+
+stationlist <- left_join(stationlist, lmp_locs)
+
+# apply station info to 2 datasets
+lmp_agg_lake <- full_join(lmp_agg_lake, stationlist)
+
+# look at conductivity from streams ####
+lmp_summer_cond_stream <- lmp_summer_cond %>% 
+  filter(site_type == 'tributary') %>% 
+  arrange(station)
+
+
+stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv')
+stream_locs <- stream_locs %>% 
+  filter(site_type == 'tributary' &
+           status == 'ongoing' &
+           first_year <= 1994 &
+           !is.na(lat_dd))
+
+lmp_summer_cond_stream <- right_join(lmp_summer_cond_stream, stream_locs)
+
+unique(lmp_summer_cond_stream$station)
+
+ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~ .)
+
+#drop a few more incomplete streams
+lmp_summer_cond_stream <- lmp_summer_cond_stream %>% 
+  filter(station != 715 &
+           station != 1415 &
+           station != 1115 &
+           station != 1420)
+
+ggplot(lmp_summer_cond_stream, aes(x = date, y = value)) +
+  geom_point() +
+  facet_grid(station ~ .)
+
+#aggregate and change units
+agg_cond_stream <- lmp_summer_cond_stream %>% 
+  group_by(station, year, lat_dd, lon_dd) %>% 
+  summarize(n = n(),
+            med_cond_uScm = median(value),
+            max_cond_uScm = max(value),
+            mean_cond_uScm = mean(value),
+            thquan_cond_uScm = quantile(value, 0.75)) %>% 
+  filter(n > 3) 
+
 ## load the spatial layers ####
 
 #sunapee shoreline
@@ -35,7 +131,7 @@ sun_stream_wgs <- st_transform(sun_stream, crs = 'EPSG:4326')
 sun_ws_water <- st_read(file.path(gis_dir, 'hydrography/waterbodies open water.shp'))
 sun_ws_water_wgs <- st_transform(sun_ws_water, crs = 'EPSG:4326')
 
-#table to sf for med and max cond
+#table to sf for med and max turb
 aggcond <- st_as_sf(lmp_agg_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
 
 #define bounding box fo vis
@@ -53,96 +149,112 @@ bbox_sun_new[2] <- bbox_sun_new[2] - (0.025 * yrange) # ymin - bottom
 bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
 ## visualize in paneled plots ####
-
+startyear = 1995
+endyear = 2023
 paneled_meancond = tm_shape(sunapee_shore, bbox = bbox_sun_new) + tm_borders() +tm_fill() +
-  tm_shape(subset(aggcond, subset = year >=1997)) +
+  tm_shape(subset(aggcond, subset = year >=startyear)) +
   tm_bubbles(col = 'mean_cond_uScm',
              shape = 24,
              palette = lake_pal,
              title.col = 'mean summer\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_meancond
 
 tmap_save(paneled_meancond, 
-          filename = file.path(dump_dir, 'mean_cond_summer_paneled_1997_2020.png'),
+          filename = file.path(dump_dir, 
+                               paste0('mean_cond_summer_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
 
 
 paneled_medcond = tm_shape(sunapee_shore, bbox = bbox_sun_new) + tm_borders() +tm_fill() +
-  tm_shape(subset(aggcond, subset = year >=1997)) +
+  tm_shape(subset(aggcond, subset = year >=startyear)) +
   tm_bubbles(col = 'med_cond_uScm',
              shape = 24,
              palette = lake_pal,
              title.col = 'median summer\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_medcond
 
-tmap_save(paneled_medcond, filename = file.path(dump_dir, 'med_cond_summer_paneled_1997_2020.png'),
+tmap_save(paneled_medcond, filename = file.path(dump_dir, 
+                                                paste0('med_cond_summer_paneled_',
+                                                       startyear,
+                                                       '-',
+                                                       endyear,
+                                                       '.png')),
           width = 8,
           height = 6,
           dpi = 300)
 
 ## visualize in animated plot ####
 
-#store faceted med cond - ncol and nrow must be 1
-cond_med_facet <- tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
-                                                                       title = 'lake depth\n(meters)',
-                                                                       contrast = c(0, 0.5)) +
-  tm_shape(sunapee_shore) + tm_borders() +
-  tm_shape(subset(aggcond, subset = year >=1997)) +
-  tm_bubbles(col = 'med_cond_uScm',
-             title.col = 'median summer\nconductivity\n(uS/cm)',
-             border.col = 'black') +
-  tm_facets(by = 'year',
-            ncol = 1,
-            nrow = 1)+
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold')
-
-
-#export gif
-tmap_animation(cond_med_facet,
-               filename = file.path(dump_dir, 'med_cond_summer_ani_1997_2020_v3.gif'),
-               fps = 1,
-               dpi = 300)
-
-
-
-#store faceted mean cond - ncol and nrow must be 1
-cond_mean_facet <- tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
-                                                                        title = 'lake depth\n(meters)',
-                                                                        contrast = c(0, 0.5)) +
-  tm_shape(sunapee_shore) + tm_borders() +
-  tm_shape(subset(aggcond, subset = year >=1997)) +
-  tm_bubbles(col = 'mean_cond_uScm',
-             title.col = 'mean summer\nconductivity\n(uS/cm)',
-             border.col = 'black') +
-  tm_facets(by = 'year',
-            ncol = 8) +
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold') +
-  tm_facets(by = 'year',
-            ncol = 1,
-            nrow = 1)+
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold')
-
-
-#export gif
-tmap_animation(cond_mean_facet,
-               filename = file.path(dump_dir, 'mean_cond_summer_ani_1997_2020_v3.gif'),
-               fps = 1,
-               dpi = 300)
+# #store faceted med cond - ncol and nrow must be 1
+# cond_med_facet <- tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
+#                                                                        title = 'lake depth\n(meters)',
+#                                                                        contrast = c(0, 0.5)) +
+#   tm_shape(sunapee_shore) + tm_borders() +
+#   tm_shape(subset(aggcond, subset = year >=1997)) +
+#   tm_bubbles(col = 'med_cond_uScm',
+#              title.col = 'median summer\nconductivity\n(uS/cm)',
+#              border.col = 'black') +
+#   tm_facets(by = 'year',
+#             ncol = 1,
+#             nrow = 1)+
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold')
+# 
+# 
+# #export gif
+# tmap_animation(cond_med_facet,
+#                filename = file.path(dump_dir, 
+#                                     paste0('med_cond_summer_ani_',
+#                                            startyear,
+#                                            '-',
+#                                            endyear,
+#                                            '.gif')),
+#                fps = 1,
+#                dpi = 300)
+# 
+# 
+# 
+# #store faceted mean cond - ncol and nrow must be 1
+# cond_mean_facet <- tm_shape(sun_bathy, bbox = bbox_sun_new) + tm_raster(palette = 'Blues',
+#                                                                         title = 'lake depth\n(meters)',
+#                                                                         contrast = c(0, 0.5)) +
+#   tm_shape(sunapee_shore) + tm_borders() +
+#   tm_shape(subset(aggcond, subset = year >=1997)) +
+#   tm_bubbles(col = 'mean_cond_uScm',
+#              title.col = 'mean summer\nconductivity\n(uS/cm)',
+#              border.col = 'black') +
+#   tm_facets(by = 'year',
+#             ncol = 7) +
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold') +
+#   tm_facets(by = 'year',
+#             ncol = 1,
+#             nrow = 1)+
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold')
+# 
+# 
+# #export gif
+# tmap_animation(cond_mean_facet,
+#                filename = file.path(dump_dir, 'mean_cond_summer_ani_1997_2020_v3.gif'),
+#                fps = 1,
+#                dpi = 300)
 
 
 
@@ -163,19 +275,24 @@ paneled_maxcond_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygo
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+  tm_shape(subset(aggcond_stream, subset = year >=startyear)) +
   tm_bubbles(col = 'max_cond_uScm',
              palette = stream_pal,
              title.col = 'maximum summer\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_maxcond_stream
 
 tmap_save(paneled_maxcond_stream, 
-          filename = file.path(dump_dir, 'max_cond_summer_stream_paneled_1997_2020.png'),
+          filename = file.path(dump_dir, 
+                               paste0('max_cond_summer_stream_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
@@ -184,18 +301,24 @@ paneled_meancond_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polyg
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+  tm_shape(subset(aggcond_stream, subset = year >=startyear)) +
   tm_bubbles(col = 'mean_cond_uScm',
              palette = stream_pal,
              title.col = 'average summer\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_meancond_stream
 
-tmap_save(paneled_meancond_stream, filename = file.path(dump_dir, 'mean_cond_summer_stream_paneled_1997_2020.png'),
+tmap_save(paneled_meancond_stream, 
+          filename = file.path(dump_dir, 
+                               paste0('mean_cond_summer_stream_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
@@ -204,18 +327,24 @@ paneled_medcond_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygo
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+  tm_shape(subset(aggcond_stream, subset = year >=startyear)) +
   tm_bubbles(col = 'med_cond_uScm',
              palette = stream_pal,
              title.col = 'median summer\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_medcond_stream
 
-tmap_save(paneled_medcond_stream, filename = file.path(dump_dir, 'med_cond_summer_stream_paneled_1997_2020.png'),
+tmap_save(paneled_medcond_stream, 
+          filename = file.path(dump_dir, 
+                               paste0('med_cond_summer_stream_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
@@ -224,115 +353,121 @@ paneled_thquancond_stream = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_pol
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+  tm_shape(subset(aggcond_stream, subset = year >=startyear)) +
   tm_bubbles(col = 'thquan_cond_uScm',
              palette = stream_pal,
              title.col = 'third quantile summer\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_thquancond_stream
 
-tmap_save(paneled_thquancond_stream, filename = file.path(dump_dir, 'thquan_cond_summer_stream_paneled_1997_2020.png'),
+tmap_save(paneled_thquancond_stream, 
+          filename = file.path(dump_dir, 
+                               paste0('thquan_cond_summer_stream_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
 
 ## vis in animated plots ----
 
-#store faceted max cond - ncol and nrow must be 1
-cond_max_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
-  tm_shape(sun_ws_wgs) + tm_borders() +
-  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
-  tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
-  tm_bubbles('max_cond_uScm',
-             col = 'green',
-             title.size = 'maximum summer\nconductivity\n(uS/cm)',
-             border.col = 'black',
-             scale = 3) +
-  tm_facets(by = 'year',
-            ncol = 1,
-            nrow = 1) +
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold')
-
-#export gif
-tmap_animation(cond_max_stream_facet,
-               filename = file.path(dump_dir, 'max_cond_summer_stream_ani_1997_2020.gif'),
-               fps = 1,
-               dpi = 300)
-
-#store faceted med cond - ncol and nrow must be 1
-cond_med_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
-  tm_shape(sun_ws_wgs) + tm_borders() +
-  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
-  tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
-  tm_bubbles('med_cond_uScm',
-             col = 'green',
-             title.size = 'median summer\nconductivity\n(uS/cm)',
-             border.col = 'black',
-             scale = 3) +
-  tm_facets(by = 'year',
-            ncol = 1,
-            nrow = 1) +
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold')
-
-#export gif
-tmap_animation(cond_med_stream_facet,
-               filename = file.path(dump_dir, 'med_cond_summer_stream_ani_1997_2020.gif'),
-               fps = 1,
-               dpi = 300)
-
-#store faceted mean cond - ncol and nrow must be 1
-cond_mean_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
-  tm_shape(sun_ws_wgs) + tm_borders() +
-  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
-  tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
-  tm_bubbles('mean_cond_uScm',
-             col = 'green',
-             title.size = 'mean summer\nconductivity\n(uS/cm)',
-             border.col = 'black',
-             scale = 3) +
-  tm_facets(by = 'year',
-            ncol = 1,
-            nrow = 1) +
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold')
-
-#export gif
-tmap_animation(cond_mean_stream_facet,
-               filename = file.path(dump_dir, 'mean_cond_summer_stream_ani_1997_2020.gif'),
-               fps = 1,
-               dpi = 300)
-
-#store faceted thquan cond - ncol and nrow must be 1
-cond_thquan_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
-  tm_shape(sun_ws_wgs) + tm_borders() +
-  tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
-  tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
-  tm_bubbles('thquan_cond_uScm',
-             col = 'green',
-             title.size = 'third quantile summer\nconductivity\n(uS/cm)',
-             border.col = 'black',
-             scale = 3) +
-  tm_facets(by = 'year',
-            ncol = 1,
-            nrow = 1) +
-  tm_layout(panel.label.size = 1.5,
-            panel.label.fontface = 'bold')
-
-#export gif
-tmap_animation(cond_thquan_stream_facet,
-               filename = file.path(dump_dir, 'thquan_cond_summer_stream_ani_1997_2020.gif'),
-               fps = 1,
-               dpi = 300)
+# #store faceted max cond - ncol and nrow must be 1
+# cond_max_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+#   tm_shape(sun_ws_wgs) + tm_borders() +
+#   tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+#   tm_shape(sun_ws_water_wgs) + tm_polygons() +
+#   tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+#   tm_bubbles('max_cond_uScm',
+#              col = 'green',
+#              title.size = 'maximum summer\nconductivity\n(uS/cm)',
+#              border.col = 'black',
+#              scale = 3) +
+#   tm_facets(by = 'year',
+#             ncol = 1,
+#             nrow = 1) +
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold')
+# 
+# #export gif
+# tmap_animation(cond_max_stream_facet,
+#                filename = file.path(dump_dir, 'max_cond_summer_stream_ani_1997_2020.gif'),
+#                fps = 1,
+#                dpi = 300)
+# 
+# #store faceted med cond - ncol and nrow must be 1
+# cond_med_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+#   tm_shape(sun_ws_wgs) + tm_borders() +
+#   tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+#   tm_shape(sun_ws_water_wgs) + tm_polygons() +
+#   tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+#   tm_bubbles('med_cond_uScm',
+#              col = 'green',
+#              title.size = 'median summer\nconductivity\n(uS/cm)',
+#              border.col = 'black',
+#              scale = 3) +
+#   tm_facets(by = 'year',
+#             ncol = 1,
+#             nrow = 1) +
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold')
+# 
+# #export gif
+# tmap_animation(cond_med_stream_facet,
+#                filename = file.path(dump_dir, 'med_cond_summer_stream_ani_1997_2020.gif'),
+#                fps = 1,
+#                dpi = 300)
+# 
+# #store faceted mean cond - ncol and nrow must be 1
+# cond_mean_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+#   tm_shape(sun_ws_wgs) + tm_borders() +
+#   tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+#   tm_shape(sun_ws_water_wgs) + tm_polygons() +
+#   tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+#   tm_bubbles('mean_cond_uScm',
+#              col = 'green',
+#              title.size = 'mean summer\nconductivity\n(uS/cm)',
+#              border.col = 'black',
+#              scale = 3) +
+#   tm_facets(by = 'year',
+#             ncol = 1,
+#             nrow = 1) +
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold')
+# 
+# #export gif
+# tmap_animation(cond_mean_stream_facet,
+#                filename = file.path(dump_dir, 'mean_cond_summer_stream_ani_1997_2020.gif'),
+#                fps = 1,
+#                dpi = 300)
+# 
+# #store faceted thquan cond - ncol and nrow must be 1
+# cond_thquan_stream_facet <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+#   tm_shape(sun_ws_wgs) + tm_borders() +
+#   tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
+#   tm_shape(sun_ws_water_wgs) + tm_polygons() +
+#   tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+#   tm_bubbles('thquan_cond_uScm',
+#              col = 'green',
+#              title.size = 'third quantile summer\nconductivity\n(uS/cm)',
+#              border.col = 'black',
+#              scale = 3) +
+#   tm_facets(by = 'year',
+#             ncol = 1,
+#             nrow = 1) +
+#   tm_layout(panel.label.size = 1.5,
+#             panel.label.fontface = 'bold')
+# 
+# #export gif
+# tmap_animation(cond_thquan_stream_facet,
+#                filename = file.path(dump_dir, 'thquan_cond_summer_stream_ani_1997_2020.gif'),
+#                fps = 1,
+#                dpi = 300)
 
 
 # both together (paneled only) ----
@@ -343,28 +478,33 @@ paneled_meancond_stream_lake = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond, subset = year >=1997)) +
+  tm_shape(subset(aggcond, subset = year >=startyear)) +
   tm_symbols(col = 'mean_cond_uScm',
              shape = 24,
              pal = lake_pal,
              title.col = 'mean summer\nin lake\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+            ncol = 7) +
+  tm_shape(subset(aggcond_stream, subset = year >=startyear)) +
     tm_symbols(col = 'mean_cond_uScm',
                pal = stream_pal,
                shape = 21,
                title.col = 'mean summer\nstream\nconductivity\n(uS/cm)',
                border.col = 'black') +
     tm_facets(by = 'year',
-              ncol = 8) +
+              ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_meancond_stream_lake
 
 tmap_save(paneled_meancond_stream_lake, 
-          filename = file.path(dump_dir, 'mean_cond_summer_streamlake_paneled_1997_2020.png'),
+          filename = file.path(dump_dir,
+                               paste0('mean_cond_summer_streamlake_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
@@ -375,38 +515,44 @@ paneled_medcond_stream_lake = tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_p
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'grey') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(subset(aggcond_stream, subset = year >=1997)) +
+  tm_shape(subset(aggcond_stream, subset = year >=startyear)) +
   tm_symbols(col = 'med_cond_uScm',
              palette = stream_pal,
              shape = 21,
              title.col = 'median summer\nstream\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
-  tm_shape(subset(aggcond, subset = year >=1997)) +
+            ncol = 7) +
+  tm_shape(subset(aggcond, subset = year >=startyear)) +
   tm_symbols(col = 'med_cond_uScm',
              shape = 24,
              palette = lake_pal,
              title.col = 'median summer\nin lake\nconductivity\n(uS/cm)',
              border.col = 'black') +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold')
 paneled_medcond_stream_lake
 
 tmap_save(paneled_medcond_stream_lake, 
-          filename = file.path(dump_dir, 'med_cond_summer_streamlake_paneled_1997_2020.png'),
+          filename = file.path(dump_dir, 
+                               paste0('med_cond_summer_streamlake_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           dpi = 300)
 
 
 # single-panel 10-year average ----
+startyear = 2014
 lmp_cond_lake <- left_join(lmp_cond_lake, lmp_locs)
 cond <- full_join(lmp_cond_lake, lmp_summer_cond_stream) %>% 
-  filter(year > 2010) 
+  filter(year >= startyear) 
   
 unique(cond$month)
 
@@ -418,7 +564,7 @@ cond_summary <- cond %>%
   filter(!is.na(lat_dd)) 
 
 cond_summary_stream <- cond_summary %>% 
-  filter(site_type == 'stream')
+  filter(site_type == 'tributary')
 cond_summary_lake <- cond_summary %>% 
   filter(site_type == 'lake')
 cond_summary_stream <- st_as_sf(cond_summary_stream, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
@@ -445,9 +591,19 @@ lt_cond_ave <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
             legend.title.fontface = 'bold',
             legend.title.size = 0.9,
             legend.text.size = 0.9,
-            title = 'Average Summer\nConductivity\n(Jun-Sept,\n2011-2020)\n ',
+            title = paste0('Average Summer\nConductivity\n(Jun-Sept,\n',
+                           startyear,
+                           '-',
+                           endyear,
+                           ')\n '),
             title.fontface = 'bold')
-tmap_save(lt_cond_ave, filename = file.path(dump_dir, 'average_longterm_conductivity_2010-2020.png'),
+tmap_save(lt_cond_ave, 
+          filename = file.path(dump_dir, 
+                               paste0('average_longterm_conductivity_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           height = 6, width =5, dpi = 300)
 
 lt_cond_med <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
@@ -470,8 +626,49 @@ lt_cond_med <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
             legend.title.fontface = 'bold',
             legend.title.size = 0.9,
             legend.text.size = 0.9,
-            title = 'Median Summer\nConductivity\n(Jun-Sept,\n2011-2020)\n ',
+            title = paste0('Median Summer\nConductivity\n(Jun-Sept,\n',
+                           startyear,
+                           '-',
+                           endyear,
+                           ')\n '),
             title.fontface = 'bold')
-tmap_save(lt_cond_med, filename = file.path(dump_dir, 'median_longterm_conductivity_2010-2020.png'),
+tmap_save(lt_cond_med, 
+          filename = file.path(dump_dir, 
+                               paste0('median_longterm_conductivity_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           height = 6, width =5, dpi = 300)
+
+
+tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_shape(sun_ws_wgs) + tm_borders() +
+  tm_shape(sun_stream_wgs) + tm_lines(col = 'black') +
+  tm_shape(sun_ws_water_wgs) + tm_polygons() +
+  tm_shape(cond_summary_stream) +
+  tm_symbols(col = 'mean_cond_uScm',
+             palette = stream_pal,
+             shape = 21,
+             title.col = 'average summer\nconductivity (stream)\n(uS/cm)',
+             border.col = 'black') +
+  tm_layout(legend.outside = F, title.position = c('center', 'top'),
+            legend.title.fontface = 'bold',
+            legend.title.size = 0.9,
+            legend.text.size = 0.9,
+            title = paste0('Average Summer\nConductivity\n(Jun-Sept,\n',
+                           startyear,
+                           '-',
+                           endyear,
+                           ')\n '),
+            title.fontface = 'bold')
+tmap_save(lt_cond_ave, 
+          filename = file.path(dump_dir, 
+                               paste0('average_longterm_conductivity_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
+          height = 6, width =5, dpi = 300)
+
 

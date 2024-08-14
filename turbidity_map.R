@@ -12,7 +12,7 @@ library(gghighlight)
 gis_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
 
 # read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/LSPALMP_1986-2020_v2021-03-29.csv')
+lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/LSPALMP_1986-2021_v2023-01-22.csv')
 
 #read in station locations
 lmp_locs <- read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
@@ -29,7 +29,7 @@ bpal = c('#d2e1e6', '#c1e3ed', '#78aed3', '#4f77aa')
 unique(lmp$parameter)
 
 lmp_turb <- lmp %>% 
-  filter(parameter == 'turb_NTU') %>% 
+  filter(parameter == 'turbidity_NTU') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))
@@ -84,11 +84,11 @@ lmp_summer_turb_stream <- lmp_summer_turb %>%
   arrange(station)
 
 
-stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/station_location_details.csv')
+stream_locs = read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/primary%20files/station_location_details.csv')
 stream_locs <- stream_locs %>% 
   filter(site_type == 'stream' &
            status == 'ongoing' &
-           last_year == 2020 &
+           last_year == 2022 &
            first_year <= 1994 &
            !is.na(lat_dd))
 
@@ -150,11 +150,13 @@ bbox_sun_new[2] <- bbox_sun_new[2] - (0.05 * yrange) # ymin - bottom
 bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 
 ## visualize in paneled plots ####
+startyear = 1995
+endyear = 2022
 
 paneled_meanturb = tm_shape(sunapee_shore, bbox = st_bbox(sunapee_shore)) + 
   tm_borders() +
   tm_fill() +
-  tm_shape(subset(aggturb, subset = year >=1997)) +
+  tm_shape(subset(aggturb, subset = year >=startdate)) +
   tm_dots('mean_turb_ntu',
           title = 'average summer\nturbidity\n(NTU)',
           shape = 21,
@@ -162,12 +164,18 @@ paneled_meanturb = tm_shape(sunapee_shore, bbox = st_bbox(sunapee_shore)) +
           border.col = 'black',
           size = 1.5) +
   tm_facets(by = 'year',
-            ncol = 8) +
+            ncol = 7) +
   tm_layout(panel.label.size = 1.5,
             panel.label.fontface = 'bold',
             panel.label.bg.color = 'white')
 paneled_meanturb
-tmap_save(paneled_meanturb, filename = file.path(dump_dir, 'mean_turb_summer_paneled_1997_2020.png'),
+tmap_save(paneled_meanturb, 
+          filename = file.path(dump_dir, 
+                               paste0('mean_turb_summer_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           units = 'in',
@@ -176,7 +184,7 @@ tmap_save(paneled_meanturb, filename = file.path(dump_dir, 'mean_turb_summer_pan
 paneled_medturb = tm_shape(sunapee_shore, bbox = st_bbox(sunapee_shore)) + 
   tm_borders() +
   tm_fill ()+
-  tm_shape(subset(aggturb, subset = year >=1997)) +
+  tm_shape(subset(aggturb, subset = year >=startyear)) +
   tm_dots('med_turb_ntu',
           palette = bpal,
           title = 'median summer\nturbidity\n(NTU)',
@@ -189,28 +197,34 @@ paneled_medturb = tm_shape(sunapee_shore, bbox = st_bbox(sunapee_shore)) +
             panel.label.fontface = 'bold',
             panel.label.bg.color = 'white')
 paneled_medturb
-tmap_save(paneled_medturb, filename = file.path(dump_dir, 'med_turb_summer_paneled_1997_2020.png'),
+tmap_save(paneled_medturb, 
+          filename = file.path(dump_dir, 
+                               paste0('med_turb_summer_paneled_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           width = 8,
           height = 6,
           units = 'in',
           dpi = 300)
 
 
-turb_summary_2010_stream <- st_as_sf(turb_summary_2010_stream, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
-turb_summary_2010_lake <- st_as_sf(turb_summary_2010_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+turb_summary_10yr_stream <- st_as_sf(turb_summary_10yr_stream, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+turb_summary_10yr_lake <- st_as_sf(turb_summary_10yr_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
 
 
 lt_turb_ave <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(turb_summary_2010_stream) +
+  tm_shape(turb_summary_10yr_stream) +
   tm_symbols(col = 'mean_turb_ntu',
              shape = 21,
              palette = ppal,
              title.col = 'average summer\nturbidity\n(stream)\n(NTU)',
              border.col = 'black') +
-  tm_shape(turb_summary_2010_lake) +
+  tm_shape(turb_summary_10yr_lake) +
   tm_symbols(col = 'mean_turb_ntu',
              shape = 24,
              palette = bpal,
@@ -220,24 +234,33 @@ lt_turb_ave <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
             legend.title.fontface = 'bold',
             legend.title.size = 1,
             legend.text.size = 1,
-            title = 'Average Summer\nTurbidity\n(Jun-Sept,\n2011-2020)\n ',
+            title = paste0('Average Summer\nTurbidity\n(Jun-Sept,\n',
+                           startyear,
+                           '-',
+                           endyear,
+                           ')\n '),
             title.fontface = 'bold')
 lt_turb_ave
 tmap_save(lt_turb_ave, 
-          filename = file.path(dump_dir, 'average_longterm_turb_2010-2020.png'),
+          filename = file.path(dump_dir, 
+                               paste0('average_longterm_turb_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           height = 6, width =5, dpi = 300)
 
 lt_turb_med <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_stream_wgs) + tm_lines(col = 'blue') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
-  tm_shape(turb_summary_2010_stream) +
+  tm_shape(turb_summary_10yr_stream) +
   tm_symbols(col = 'med_turb_ntu',
              shape = 21,
              palette = ppal,
              title.col = 'median summer\nturbidity\n(stream)\n(NTU)',
              border.col = 'black') +
-  tm_shape(turb_summary_2010_lake) +
+  tm_shape(turb_summary_10yr_lake) +
   tm_symbols(col = 'med_turb_ntu',
              shape = 24,
              palette = bpal,
@@ -247,9 +270,19 @@ lt_turb_med <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
             legend.title.fontface = 'bold',
             legend.title.size = 1,
             legend.text.size = 1,
-            title = 'Median Summer\nTurbidity\n(Jun-Sept,\n2011-2020)\n ',
+            title = paste0('Median Summer\nTurbidity\n(Jun-Sept,\n',
+                           startyear,
+                           '-',
+                           endyear,
+                           ')\n '),
             title.fontface = 'bold')
 lt_turb_med
-tmap_save(lt_turb_med, filename = file.path(dump_dir, 'median_longterm_turb_2010-2020.png'),
+tmap_save(lt_turb_med, 
+          filename = file.path(dump_dir, 
+                               paste0('median_longterm_turb_',
+                                      startyear,
+                                      '-',
+                                      endyear,
+                                      '.png')),
           height = 6, width =5, dpi = 300)
 

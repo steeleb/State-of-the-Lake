@@ -2,18 +2,9 @@
 
 library(tidyverse)
 
-# read in LMP record
-lmp <- read.csv('https://raw.githubusercontent.com/Lake-Sunapee-Protective-Association/LMP/main/master%20files/LSPALMP_1986-2020_v2021-03-29.csv')
-
-#read in station locations
-lmp_locs = read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
-
 # filter and clean up chla for inlake chla ####
-#filter for chla
-unique(lmp$parameter)
-
 lmp_chla <- lmp %>% 
-  filter(parameter == 'chla_ugl') %>% 
+  filter(parameter == 'chlorophyll_a_ugl') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))

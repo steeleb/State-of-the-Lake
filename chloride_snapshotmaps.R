@@ -10,9 +10,7 @@ library(cowplot)
 #features dir
 feat_dir <- 'C:/Users/steeleb/Dropbox/travel/gis/project/Sunapee/'
 dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/maps/'
-
-#read in station locations
-lmp_shortlist <- read.csv('C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/lmp_shortlist.csv')
+fig_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/chloride'
 
 # bring in spatial layers ----
 lake <- read_sf(file.path(feat_dir, 'hydrography/LS_shore_WGS.shp'))
@@ -26,33 +24,36 @@ roads <- read_sf(file.path(feat_dir, 'roads/roads_sun_wshed.shp'))
 roads <- st_transform(roads, crs = 'epsg:4326')
 roads <- st_zm(roads,drop = T)
 
-lmp <- st_as_sf(lmp_shortlist, 
+lmp <- st_as_sf(lmp_locs, 
                 coords = c('lon_dd', 'lat_dd'),
                 crs = 'epsg:4326') 
 
 # 2020 march chloride in tribs deep dive ----
-lmp_cl_mar2020 <- lmp_cl %>% 
-  right_join(lmp_shortlist) %>% 
-  filter(year == 2020 & month == 3) %>% 
-  group_by(station, lon_dd, lat_dd, site_type, sub_site_type, Name) %>% 
+lmp_cl_mar_ann <- lmp_cl %>% 
+  right_join(lmp_locs) %>% 
+  group_by(station, year, lon_dd, lat_dd, site_type, sub_site_type, Name) %>% 
   filter(!is.na(value)) %>% 
-  summarise(value = mean(value)) %>% 
-  mutate(mean_name = as.integer(value)) %>% 
-  mutate(Name = paste0(Name, ' (', mean_name, ')'))
+  summarise(value = mean(value))
 
-lmp_cl_mar2020 <- st_as_sf(lmp_cl_mar2020, 
+lmp_cl_mar <- lmp_cl_mar_ann %>%
+  group_by(station, lon_dd, lat_dd, site_type, sub_site_type, Name) %>%
+  summarise(value = mean(value),
+            n = n()) %>% 
+  mutate(mean_name = as.integer(value)) %>% 
+  mutate(Name = paste0(Name, ' (', mean_name, ")"))
+
+lmp_cl_mar <- st_as_sf(lmp_cl_mar, 
                         coords = c('lon_dd', 'lat_dd'),
                         crs = 'epsg:4326') 
 
-lmp_cl_mar2020 <- lmp_cl_mar2020 %>% 
+lmp_cl_mar <- lmp_cl_mar %>% 
   filter(sub_site_type == 'tributary')
 
-lmp_cl_mar2020_stream_e = lmp_cl_mar2020 %>% 
-  filter(station == 830 | station == 835 | 
-           station == 805 | station == 800 | station == 788  | station == 760)
-lmp_cl_mar2020_stream_w = lmp_cl_mar2020 %>% 
-  filter(station != 830 & station != 835 & 
-           station != 805 & station != 800 & station != 788  & station != 760)
+east = c(1420, 1415, 830, 835, 805, 800, 788, 760)
+lmp_cl_mar_stream_e = lmp_cl_mar %>% 
+  filter(station %in% east)
+lmp_cl_mar_stream_w = lmp_cl_mar %>% 
+  filter(!station %in% east)
 
 st_bbox(watershed)
 
@@ -61,22 +62,43 @@ ggplot() +
   geom_sf(streams, mapping = aes(), color = 'dark blue') +
   geom_sf(waterbodies, mapping = aes(), fill = 'light blue') +
   geom_sf(roads, mapping = aes(), color = 'light grey') +
-  geom_sf(lmp_cl_mar2020, mapping = aes(color = value), size = 3) +
+  geom_sf(lmp_cl_mar, mapping = aes(color = value), size = 3) +
   labs(color = 'average\nchloride\n(mg/L)') +
   scale_color_viridis_c() +
   theme_void() +
   annotation_north_arrow(width = unit(0.25, 'in')) +
-  labs(x = NULL, y = NULL, title = '2020 Late March\nTributary chloride') +
-  geom_sf_label_repel(lmp_cl_mar2020_stream_w, mapping = aes(label = Name), nudge_x = -1,nudge_y = -0.01, size = 1.75) +
-  geom_sf_label_repel(lmp_cl_mar2020_stream_e, mapping = aes(label = Name), nudge_x = 1,nudge_y = -0.001,  size = 1.75) +
+  labs(x = NULL, y = NULL, title = 'Late March\nTributary chloride\n2020-2023') +
+  geom_sf_label_repel(lmp_cl_mar_stream_w, mapping = aes(label = Name), nudge_x = -0.05,nudge_y = -0.01, size = 1.5) +
+  geom_sf_label_repel(lmp_cl_mar_stream_e, mapping = aes(label = Name), nudge_x = 0.05,nudge_y = -0.001,  size = 1.5) +
   # facet_grid(. ~ sub_site_type) +
   theme(plot.title = element_text(hjust = 0.5, face = 'bold')) +
   # theme(strip.text.x = element_text(size = 12, face = "bold")) +
   theme(legend.position = 'bottom', legend.title = element_text(size = 10)) +
-  scale_x_continuous(limits = c(as.numeric(st_bbox(watershed)[1])-0.02, as.numeric(st_bbox(watershed)[3])+0.02))
-ggsave(file.path(dump_dir, 'chloridemar2020_tribs_map_labeled.jpg'),
+  scale_x_continuous(limits = c(as.numeric(st_bbox(watershed)[1])-0.07, as.numeric(st_bbox(watershed)[3])+0.07))
+ggsave(file.path(dump_dir, 'chloridemar_tribs_map_labeled.jpg'),
        height = 6,
-       width = 4,
+       width = 5,
+       dpi = 600,
+       units = 'in',
+       bg = 'white')
+
+
+lmp_cl_mar_ann %>% 
+  filter(site_type == 'tributary') %>% 
+ggplot(., aes(x = year, y = value, color = value)) +
+  geom_point(size = 3) +
+  facet_grid(station ~ .) +
+  scale_color_viridis_c() +
+  labs(x = 'year', y = 'Chloride (mg/L)', title = 'Late March Tributary Chloride') +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5, face = 'bold')) +
+  theme(strip.text.x = element_text(size = 12, face = "bold")) +
+  theme(legend.position = 'bottom', 
+        legend.title = element_text(size = 10))
+
+ggsave(file.path(fig_dir, 'chloridemar_tribs_annual.jpg'),
+       height = 8,
+       width = 3,
        dpi = 600,
        units = 'in',
        bg = 'white')

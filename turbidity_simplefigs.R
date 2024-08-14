@@ -1,12 +1,9 @@
 # code to visualize long term turbidity in lake sunapee - just timeseries plots
 
-source('turbidity_summary.R')
-
 library(ggthemes)
 
 #point to dump directory
-dump_dir <- 'C:/Users/steeleb/Dropbox/Lake Sunapee/misc/state of the lake/figs/summer_turb/'
-
+dump_dir <- file.path(gen_dump_dir, 'summer_turb/')
 
 ## plot mean and median -- site-years ----
 ggplot(lmp_turb_aggyearsite, aes(x = as.numeric(year), y = mean_turb_NTU)) +
@@ -18,7 +15,7 @@ ggplot(lmp_turb_aggyearsite, aes(x = as.numeric(year), y = mean_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveturbpersite.png'),
        height = 5,
@@ -33,7 +30,7 @@ ggplot(lmp_turb_aggyearsite, aes(x = as.numeric(year), y = mean_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveturbpersite_noloess.png'),
        height = 5,
@@ -51,7 +48,7 @@ ggplot(lmp_turb_aggyearsite, aes(x = as.numeric(year), y = med_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbpersite.png'),
        height = 6,
@@ -66,7 +63,7 @@ ggplot(lmp_turb_aggyearsite, aes(x = as.numeric(year), y = med_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbpersite_noloess.png'),
        height = 6,
@@ -84,7 +81,7 @@ ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = mean_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveturbperyear.png'),
        height = 5,
@@ -99,7 +96,7 @@ ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = mean_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'average annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveturbperyear_noloess.png'),
        height = 5,
@@ -116,7 +113,7 @@ ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = med_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbperyear.png'),
        height = 5,
@@ -131,7 +128,7 @@ ggplot(lmp_turb_aggyear, aes(x = as.numeric(year), y = med_turb_NTU)) +
         strip.background =element_rect(fill="white"),
         strip.text = element_text(face = 'bold')) +
   scale_color_colorblind() +
-  labs(x = NULL,
+  labs(x = "year",
        y = 'median annual turbidity per site per year (NTU)')
 ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_medturbperyear_noloess.png'),
        height = 5,
