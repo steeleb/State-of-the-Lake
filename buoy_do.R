@@ -50,6 +50,45 @@ make_do_plot <- function(data, year) {
           
 }
 
+one_var_do_plot <- function(data, year, param, min, max) {
+  df <- data %>% 
+    mutate(date = ymd(format(datetime, '%Y-%m-%d'))) %>% 
+    group_by(date, parameter, depth) %>% 
+    summarize(mean_value = mean(value, na.rm = T)) %>% 
+    ungroup() %>%
+    filter(parameter == param) %>% 
+    mutate(parameter = factor(parameter, 
+                              levels = c('waterTemperature',
+                                         'oxygenDissolved',
+                                         'oxygenDissolvedPercentOfSaturation'),
+                              labels = c('water\ntemperature\n(deg C)',
+                                         'dissolved\noxygen\n(mg/L)',
+                                         'dissolved\noxygen\nsaturation\n(%)')))
+  
+  ggplot(df, aes(x = date, y = mean_value, color = depth)) +
+    geom_line() +
+    facet_grid(parameter ~ ., scales = "free_y") +
+    scale_color_colorblind() +
+    scale_y_continuous(limits = c(min, max)) +
+    scale_x_date(limits = c(ymd(paste0(year, "-05-01")),
+                            ymd(paste0(year, "-11-01"))),
+                 breaks = seq.Date(ymd(paste0(year, "-05-01")),
+                                   ymd(paste0(year, "-11-01")),
+                                   "1 month"),
+                 labels = format(seq.Date(ymd(paste0(year, "-05-01")),
+                                          ymd(paste0(year, "-11-01")),
+                                          "1 month"), '%b')) +
+    labs(x = NULL, y = NULL, 
+         color = 'depth (m)',
+         title = year) +
+    final_theme +
+    theme(legend.position = 'bottom')
+  
+  ggsave(file.path(dump_dir, paste0("do_", param, "_", year, ".png")),
+         dpi = 200, width = 5, height = 2.5, units = 'in')
+  
+}
+
 
 # 2016 do figures ####
 
@@ -82,6 +121,10 @@ buoy_2016_vert <- buoy_2016 %>%
   ungroup()
 
 make_do_plot(buoy_2016_vert, 2016)
+
+one_var_do_plot(data = buoy_2016_vert, year = 2016, min = 5, max = 30, param = "waterTemperature")
+one_var_do_plot(data = buoy_2016_vert, year = 2016, min = 6, max = 13, param = "oxygenDissolved")
+one_var_do_plot(data = buoy_2016_vert, year = 2016, min = 65, max = 115, param = "oxygenDissolvedPercentOfSaturation")
 
 # 2017 and 2018 have insufficient DO data  ####
 
@@ -117,6 +160,9 @@ buoy_2019_vert <- buoy_2019 %>%
 
 make_do_plot(buoy_2019_vert, 2019)
 
+one_var_do_plot(data = buoy_2019_vert, year = 2019, min = 5, max = 30, param = "waterTemperature")
+one_var_do_plot(data = buoy_2019_vert, year = 2019, min = 6, max = 13, param = "oxygenDissolved")
+one_var_do_plot(data = buoy_2019_vert, year = 2019, min = 65, max = 115, param = "oxygenDissolvedPercentOfSaturation")
 
 
 # 2020 do figures ####
@@ -156,6 +202,10 @@ buoy_2020_vert <- buoy_2020 %>%
   ungroup()
 
 make_do_plot(buoy_2020_vert, 2020)
+
+one_var_do_plot(data = buoy_2020_vert, year = 2020, min = 5, max = 30, param = "waterTemperature")
+one_var_do_plot(data = buoy_2020_vert, year = 2020, min = 6, max = 13, param = "oxygenDissolved")
+one_var_do_plot(data = buoy_2020_vert, year = 2020, min = 65, max = 115, param = "oxygenDissolvedPercentOfSaturation")
 
 
 # 2021 do figures ####
@@ -198,6 +248,10 @@ buoy_2021_vert <- full_join(do_2021, exo_2021) %>%
   ungroup()
 
 make_do_plot(buoy_2021_vert, 2021)
+
+one_var_do_plot(data = buoy_2021_vert, year = 2021, min = 5, max = 30, param = "waterTemperature")
+one_var_do_plot(data = buoy_2021_vert, year = 2021, min = 6, max = 13, param = "oxygenDissolved")
+one_var_do_plot(data = buoy_2021_vert, year = 2021, min = 65, max = 115, param = "oxygenDissolvedPercentOfSaturation")
 
 
 
@@ -242,6 +296,9 @@ buoy_2022_vert <- full_join(do_2022, exo_2022) %>%
 
 make_do_plot(buoy_2022_vert, 2022)
 
+one_var_do_plot(data = buoy_2022_vert, year = 2022, min = 5, max = 30, param = "waterTemperature")
+one_var_do_plot(data = buoy_2022_vert, year = 2022, min = 6, max = 13, param = "oxygenDissolved")
+one_var_do_plot(data = buoy_2022_vert, year = 2022, min = 65, max = 115, param = "oxygenDissolvedPercentOfSaturation")
 
 
 # 2023 do figures ####
