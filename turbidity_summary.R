@@ -4,7 +4,7 @@ library(tidyverse)
 
 # filter and clean up turbidity for inlake turb ####
 lmp_turb <- lmp %>% 
-  filter(parameter == 'turbidity_NTU') %>% 
+  filter(parameter == 'turbidity_nephelometricTurbidityUnit') %>% 
   filter(!is.na(value)) %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 

@@ -47,7 +47,9 @@ sun_ws_water <- st_read(file.path(feat_dir, 'hydrography/waterbodies open water.
 sun_ws_water_wgs <- st_transform(sun_ws_water, crs = 'EPSG:4326')
 
 #table to sf for med and max tp
-aggtp <- st_as_sf(lmp_agg_tp_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+aggtp <- lmp_agg_tp_lake %>% 
+  filter(!is.na(lon_dd)) %>% 
+  st_as_sf(., coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326', remove = F)
 
 #define bounding box fo vis
 #get bounding box of bathy
@@ -233,7 +235,9 @@ bbox_sun_new[4] <- bbox_sun_new[4] + (0.05 * yrange) # ymax - top
 ## visualize trib TP in paneled plots ----
 
 #table to sf for med and max tp
-aggtp_trib <- st_as_sf(agg_tp_trib, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+aggtp_trib <- agg_tp_trib %>% 
+  filter(!is.na(lon_dd)) %>% 
+  st_as_sf(., coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326', remove = F)
 
 # sunapee watershed
 sun_ws <- st_read(file.path(feat_dir, 'watersheds/NH_hydro_Sunapee/Lake_Sunapee_watershed.shp'))
@@ -410,11 +414,17 @@ tp_summary_10yr_lake = tp_summary_10yr %>%
   filter(site_type == 'lake')%>% 
   filter(station %in% lmp_shortlist$station)
 
-tp_summary_10yr_trib <- st_as_sf(tp_summary_10yr_trib, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
-tp_summary_10yr_lake <- st_as_sf(tp_summary_10yr_lake, coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326')
+tp_summary_10yr_trib <- st_as_sf(tp_summary_10yr_trib, 
+                                 coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326',
+                                 remove = F)
+tp_summary_10yr_lake <- st_as_sf(tp_summary_10yr_lake, 
+                                 coords = c('lon_dd', 'lat_dd'), crs = 'EPSG:4326',
+                                 remove = F)
 
 
 lt_tp_ave <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
+  tm_title(paste0('Average Summer\ntotal phosphorus\n(Jun-Sept,\n', start_10_year, '-', end_10_year, ')'),
+           fontface = 'bold', position = tm_pos_out()) +
   tm_shape(sun_ws_wgs) + tm_borders() +
   tm_shape(sun_trib_wgs) + tm_lines(col = 'blue') +
   tm_shape(sun_ws_water_wgs) + tm_polygons() +
@@ -433,9 +443,7 @@ lt_tp_ave <- tm_shape(sunapee_shore, bbox = bbox_sun_ws) + tm_polygons() +
   tm_layout(legend.outside = T,
             legend.title.fontface = 'bold',
             legend.title.size = 1,
-            legend.text.size = 1,
-            title = paste0('Average Summer\ntotal phosphorus\n(Jun-Sept,\n', start_10_year, '-', end_10_year, ')\n '),
-            title.fontface = 'bold')
+            legend.text.size = 1) 
 lt_tp_ave
 tmap_save(lt_tp_ave, 
           filename = file.path(dump_dir, paste0('average_longterm_tp_', start_10_year, '-', end_10_year, '.png')),

@@ -4,7 +4,6 @@ source('phosphorus_summary.R')
 
 library(sf)
 library(ggspatial)
-library(ggsflabel)
 library(cowplot)
 
 dump_dir <- file.path(gen_dump_dir, "maps")

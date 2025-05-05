@@ -4,7 +4,7 @@ library(tidyverse)
 
 # filter and clean up chla for inlake chla ####
 lmp_chla <- lmp %>% 
-  filter(parameter == 'chlorophyll_a_ugl') %>% 
+  filter(parameter == 'chlorophyll_a_microgramPerLiter') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))

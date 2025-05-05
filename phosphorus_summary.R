@@ -4,7 +4,7 @@ library(tidyverse)
 
 # filter and clean up TP for inlake TP ####
 lmp_tp <- lmp %>% 
-  filter(parameter == 'phosphorusTotal_mgl') %>% 
+  filter(parameter == 'phosphorusTotal_milligramPerLiter') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))

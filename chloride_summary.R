@@ -4,7 +4,7 @@ library(tidyverse)
 
 # filter and clean up cl for inlake cl ####
 lmp_cl <- lmp %>% 
-  filter(parameter == 'chloride_mgl') %>% 
+  filter(parameter == 'chloride_milligramPerLiter') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))

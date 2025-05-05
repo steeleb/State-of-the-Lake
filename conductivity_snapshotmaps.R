@@ -6,7 +6,6 @@ devtools::install_github("yutannihilation/ggsflabel")
 
 library(sf)
 library(ggsflabel)
-library(ggspatial)
 library(cowplot)
 
 # add values to names for map ----

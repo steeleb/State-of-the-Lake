@@ -27,6 +27,27 @@ ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveTPpersite.png'),
 
 ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = mean_tp_ugl)) +
   geom_abline(slope = 0, intercept = 5, lty = 2, color = 'black') +
+  geom_smooth(color = 'dark grey', se = F, aes(color = sub_site_type)) +
+  geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
+  facet_grid(sub_site_type ~ .) +
+  theme_bw() +
+  theme(legend.position =  'none',
+        strip.background =element_rect(fill="white"),
+        strip.text = element_text(face = 'bold')) +
+  scale_color_colorblind() +
+  scale_y_continuous(limits = c(0, 150)) +
+  labs(x = "year",
+       y = 'average annual total phosphorus per site per year (ug/L)')
+ggsave(filename = file.path(dump_dir, 'deep_shallow_inlet_LT_aveTPpersite_max150.png'),
+       height = 5,
+       width = 7,
+       dpi = 300,
+       units ='in')
+
+
+
+ggplot(lmp_tp_aggyearsite, aes(x = as.numeric(year), y = mean_tp_ugl)) +
+  geom_abline(slope = 0, intercept = 5, lty = 2, color = 'black') +
   geom_point(aes(color = sub_site_type, shape = sub_site_type), size = 2) +
   facet_grid(sub_site_type ~ .) +
   theme_bw() +

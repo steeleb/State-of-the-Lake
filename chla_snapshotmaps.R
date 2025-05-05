@@ -4,7 +4,6 @@ source('chla_summary.R')
 
 library(sf)
 library(ggspatial)
-library(ggsflabel)
 library(cowplot)
 
 #features dir

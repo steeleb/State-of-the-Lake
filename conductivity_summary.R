@@ -4,7 +4,7 @@ library(tidyverse)
 
 # filter and clean up cond for inlake cond ####
 lmp_cond <- lmp %>% 
-  filter(parameter == 'specificConductance_uScm') %>% 
+  filter(parameter == 'specificConductance_microSiemenPerCentimeter') %>% 
   mutate(date = as.Date(date)) %>% 
   mutate(year = format(date, '%Y')) %>% 
   mutate(month = as.numeric(format(date, '%m')))
